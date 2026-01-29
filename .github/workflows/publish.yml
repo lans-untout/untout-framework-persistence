@@ -1,0 +1,63 @@
+name: Publish NuGet Package
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish (e.g., 0.1.0-preview)'
+        required: true
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore
+
+    - name: Build
+      run: dotnet build --configuration Release --no-restore
+
+    - name: Test
+      run: dotnet test --configuration Release --no-build --verbosity normal
+
+    - name: Pack Core Library
+      run: |
+        dotnet pack src/Untout.Framework.Persistence/Untout.Framework.Persistence.csproj \
+          --configuration Release \
+          --no-build \
+          --output ./nupkgs \
+          -p:PackageVersion=${{ github.event.inputs.version || github.event.release.tag_name }}
+
+    - name: Pack PostgreSQL Library
+      run: |
+        dotnet pack src/Untout.Framework.Persistence.PostgreSql/Untout.Framework.Persistence.PostgreSql.csproj \
+          --configuration Release \
+          --no-build \
+          --output ./nupkgs \
+          -p:PackageVersion=${{ github.event.inputs.version || github.event.release.tag_name }}
+
+    - name: Publish to GitHub Packages
+      run: |
+        dotnet nuget push ./nupkgs/*.nupkg \
+          --source https://nuget.pkg.github.com/lans-untout/index.json \
+          --api-key ${{ secrets.GITHUB_TOKEN }} \
+          --skip-duplicate
+
+    # Uncomment to publish to NuGet.org
+    # - name: Publish to NuGet.org
+    #   run: |
+    #     dotnet nuget push ./nupkgs/*.nupkg \
+    #       --source https://api.nuget.org/v3/index.json \
+    #       --api-key ${{ secrets.NUGET_API_KEY }} \
+    #       --skip-duplicate
