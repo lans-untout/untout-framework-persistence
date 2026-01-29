@@ -1,6 +1,7 @@
 namespace Untout.Framework.Persistence.Tests.Repositories;
 
 using Moq;
+using System;
 using System.Data;
 using Dapper;
 using Untout.Framework.Persistence.Interfaces;
@@ -254,8 +255,9 @@ public class DapperRepositoryTests
             {
                 return dynamicParams.Get<int>("Id");
             }
-            catch
+            catch (ArgumentException)
             {
+                // Parameter might be named "@Id" instead of "Id"
                 return dynamicParams.Get<int>("@Id");
             }
         }
