@@ -1,8 +1,8 @@
+namespace Untout.Framework.Persistence.Interfaces;
+
 using System.Collections.Generic;
 using System.Threading;
 using System.Threading.Tasks;
-
-namespace Untout.Framework.Persistence.Interfaces;
 
 /// <summary>
 /// Generic repository interface for CRUD operations

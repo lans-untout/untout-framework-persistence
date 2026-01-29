@@ -1,9 +1,9 @@
+namespace Untout.Framework.Persistence.PostgreSql;
+
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using Untout.Framework.Persistence.Interfaces;
-
-namespace Untout.Framework.Persistence.PostgreSql;
 
 /// <summary>
 /// PostgreSQL-specific SQL query builder

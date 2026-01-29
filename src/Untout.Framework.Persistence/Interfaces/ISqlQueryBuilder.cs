@@ -1,6 +1,6 @@
-using System.Collections.Generic;
-
 namespace Untout.Framework.Persistence.Interfaces;
+
+using System.Collections.Generic;
 
 /// <summary>
 /// SQL query builder abstraction for database-agnostic query generation
