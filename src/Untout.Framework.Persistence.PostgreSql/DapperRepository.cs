@@ -73,7 +73,7 @@ public abstract class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntit
 
         // PostgreSQL RETURNING clause returns the ID directly
         var insertedId = await connection.ExecuteScalarAsync<TKey>(sql, entity);
-        entity.Id = insertedId;
+        entity.Id = insertedId ?? throw new InvalidOperationException("Failed to retrieve inserted ID from database.");
 
         return entity;
     }
