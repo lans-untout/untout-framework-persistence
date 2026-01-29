@@ -1,10 +1,15 @@
+namespace Untout.Framework.Persistence.Tests.Repositories;
+
 using Moq;
 using System.Data;
 using Dapper;
 using Untout.Framework.Persistence.Interfaces;
+using Untout.Framework.Persistence.PostgreSql;
 using Xunit;
-
-namespace Untout.Framework.Persistence.Tests.Repositories;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using System.Threading;
+using System.Linq;
 
 public class DapperRepositoryTests
 {
@@ -110,7 +115,7 @@ public class DapperRepositoryTests
         var result = await _repository.AddAsync(entity);
 
         // Assert
-        Assert.Equal(expectedId, result);
+        Assert.Equal(expectedId, result.Id);
         _mockQueryBuilder.Verify(b => b.BuildInsert(It.IsAny<IEnumerable<string>>()), Times.Once);
     }
 
@@ -188,7 +193,7 @@ public class DapperRepositoryTests
         var result = await _repository.AddAsync(entity);
 
         // Assert
-        Assert.Equal(0, result);
+        Assert.Equal(0, result.Id);
     }
 
     [Fact]
@@ -271,7 +276,7 @@ public class DapperRepositoryTests
             IDbConnectionFactory connectionFactory,
             ISqlQueryBuilder<int, TestEntity> queryBuilder,
             IDbNameAdapter nameAdapter)
-            : base(connectionFactory, queryBuilder, nameAdapter)
+            : base(connectionFactory, queryBuilder)
         {
         }
     }

@@ -4,6 +4,7 @@ using Xunit;
 using Untout.Framework.Persistence.PostgreSql;
 using Untout.Framework.Persistence.PostgreSql.Adapters;
 using Untout.Framework.Persistence.Interfaces;
+using System;
 
 public class PostgreSqlQueryBuilderTests
 {

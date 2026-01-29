@@ -2,6 +2,7 @@ namespace Untout.Framework.Persistence.Tests.ConnectionFactory;
 
 using Xunit;
 using Untout.Framework.Persistence.PostgreSql;
+using System;
 
 public class NpgsqlConnectionFactoryTests
 {

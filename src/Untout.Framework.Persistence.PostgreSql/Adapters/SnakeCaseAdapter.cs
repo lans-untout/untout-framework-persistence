@@ -1,5 +1,5 @@
 namespace Untout.Framework.Persistence.PostgreSql.Adapters;
-using System;
+
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.RegularExpressions;
 using Untout.Framework.Persistence.Interfaces;
