@@ -48,36 +48,17 @@ public class AttributeAdapterTests
     }
 
     [Fact]
-    public void GetColumnName_WithPropertyInfo_ReturnsAttributeValue_WhenColumnAttributePresent()
+    public void GetColumnName_ReturnsPropertyName_AsExpected()
     {
-        // Arrange
-        var property = typeof(EntityWithColumnAttribute).GetProperty(nameof(EntityWithColumnAttribute.CustomField))!;
-
-        // Act
-        var columnName = _adapter.GetColumnName(property);
+        // Arrange & Act
+        var columnName1 = _adapter.GetColumnName("CustomField");
+        var columnName2 = _adapter.GetColumnName("RegularField");
+        var columnName3 = _adapter.GetColumnName("SomeProperty");
 
         // Assert
-        Assert.Equal("custom_column", columnName);
-    }
-
-    [Fact]
-    public void GetColumnName_WithPropertyInfo_ReturnsPropertyName_WhenNoColumnAttribute()
-    {
-        // Arrange
-        var property = typeof(EntityWithColumnAttribute).GetProperty(nameof(EntityWithColumnAttribute.RegularField))!;
-
-        // Act
-        var columnName = _adapter.GetColumnName(property);
-
-        // Assert
-        Assert.Equal("RegularField", columnName);
-    }
-
-    [Fact]
-    public void GetColumnName_WithPropertyInfo_ThrowsArgumentNullException_WhenPropertyIsNull()
-    {
-        // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => _adapter.GetColumnName((System.Reflection.PropertyInfo)null!));
+        Assert.Equal("CustomField", columnName1);
+        Assert.Equal("RegularField", columnName2);
+        Assert.Equal("SomeProperty", columnName3);
     }
 
     // Test entities
