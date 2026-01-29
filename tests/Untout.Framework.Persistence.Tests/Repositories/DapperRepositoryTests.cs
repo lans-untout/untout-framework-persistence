@@ -1,15 +1,16 @@
 namespace Untout.Framework.Persistence.Tests.Repositories;
 
-using Moq;
+using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Dapper;
+using Moq;
 using Untout.Framework.Persistence.Interfaces;
 using Untout.Framework.Persistence.PostgreSql;
 using Xunit;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using System.Threading;
-using System.Linq;
 
 public class DapperRepositoryTests
 {
@@ -254,8 +255,9 @@ public class DapperRepositoryTests
             {
                 return dynamicParams.Get<int>("Id");
             }
-            catch
+            catch (ArgumentException)
             {
+                // Parameter might be named "@Id" instead of "Id"
                 return dynamicParams.Get<int>("@Id");
             }
         }
