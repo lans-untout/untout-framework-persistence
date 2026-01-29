@@ -1,281 +1,59 @@
 # Untout.Framework.Persistence
 
-A lightweight, reusable persistence framework for .NET 8 applications using Dapper and PostgreSQL.
+Lightweight persistence building blocks for .NET 8 (Dapper + PostgreSQL).
 
-## Overview
-
-This framework extracts proven patterns from production codebases to reduce boilerplate repository code by 30-40%. It provides database-agnostic abstractions with PostgreSQL-specific implementations.
-
-## Key Features
-
-- **SQL Query Builder**: Generates CRUD queries with database-specific syntax (RETURNING clause for PostgreSQL)
-- **Name Adapters**: Convention-based (snake_case) and attribute-based ([Table]/[Column]) mapping
-- **Connection Factory**: Proper async connection lifecycle management
-- **Generic Repository**: Base implementation for common CRUD operations
-- **Clean Architecture**: Separation of interfaces and implementations
+- `Untout.Framework.Persistence`: core abstractions (interfaces)
+- `Untout.Framework.Persistence.PostgreSql`: PostgreSQL implementation
+- `Untout.Framework.Persistence.Tests`: unit tests / usage examples
 
 ## Project Structure
 
 ```
 src/
-├── Untout.Framework.Persistence/          # Core abstractions (interfaces)
+├── Untout.Framework.Persistence/                 # Core abstractions
 │   └── Interfaces/
-│       ├── IEntity.cs                     # Base entity with Id
-│       ├── IDbConnectionFactory.cs        # Connection factory
-│       ├── ISqlQueryBuilder.cs            # Query builder interface
-│       ├── IDbNameAdapter.cs              # Name mapping interface
-│       └── IRepository.cs                 # Repository interface
-│
-└── Untout.Framework.Persistence.PostgreSql/  # PostgreSQL implementations
-    ├── NpgsqlConnectionFactory.cs         # Npgsql connection factory
-    ├── PostgreSqlQueryBuilder.cs          # RETURNING clause support
-    ├── DapperRepository.cs                # Base repository with Dapper
+│       ├── IEntity.cs
+│       ├── IRepository.cs
+│       ├── ISqlQueryBuilder.cs
+│       ├── IDbConnectionFactory.cs
+│       └── IDbNameAdapter.cs
+└── Untout.Framework.Persistence.PostgreSql/      # PostgreSQL implementation
+    ├── DapperRepository.cs
+    ├── PostgreSqlQueryBuilder.cs
+    ├── NpgsqlConnectionFactory.cs
     └── Adapters/
-        ├── SnakeCaseAdapter.cs            # PascalCase -> snake_case
-        └── AttributeAdapter.cs            # [Table]/[Column] attributes
+        ├── SnakeCaseAdapter.cs
+        └── AttributeAdapter.cs
 
 tests/
-└── Untout.Framework.Persistence.Tests/   # Unit tests
+└── Untout.Framework.Persistence.Tests/
 ```
+
+## How it works (mental model)
+
+1. Call a repository method (Get/Add/Update/Delete).
+2. Repository asks the query builder for SQL.
+3. Repository gets a connection from the connection factory.
+4. Dapper executes SQL with parameters.
+5. Name adapter keeps table/column naming consistent with your database.
+
+## Getting started (minimal steps)
+
+1. Provide a PostgreSQL connection string.
+2. Choose a name adapter:
+   - `SnakeCaseAdapter` (convention-based)
+   - `AttributeAdapter` (uses `[Table]` / `[Column]`)
+3. Register `PostgreSqlQueryBuilder<TKey, TEntity>` for your entities.
+4. Create repositories by deriving from `DapperRepository<TKey, TEntity>`.
+
+Working patterns and examples live in `tests/`.
 
 ## Installation
 
-```bash
-# Coming soon to GitHub Packages
-dotnet add package Untout.Framework.Persistence
-dotnet add package Untout.Framework.Persistence.PostgreSql
-```
+NuGet publishing is not enabled yet. For now, reference the projects directly:
 
-For now, reference the projects directly:
-
-```xml
-<ItemGroup>
-  <ProjectReference Include="..\untout-framework-persistence\src\Untout.Framework.Persistence\Untout.Framework.Persistence.csproj" />
-  <ProjectReference Include="..\untout-framework-persistence\src\Untout.Framework.Persistence.PostgreSql\Untout.Framework.Persistence.PostgreSql.csproj" />
-</ItemGroup>
-```
-
-## Quick Start
-
-### 1. Define Your Entity
-
-```csharp
-using Untout.Framework.Persistence.Interfaces;
-
-public class Article : IEntity<int>
-{
-    public int Id { get; set; }
-    public string Title { get; set; } = string.Empty;
-    public string Content { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; }
-}
-```
-
-### 2. Create Your Repository
-
-```csharp
-using Untout.Framework.Persistence.Interfaces;
-using Untout.Framework.Persistence.PostgreSql;
-
-public class ArticleRepository : DapperRepository<int, Article>
-{
-    public ArticleRepository(
-        IDbConnectionFactory connectionFactory,
-        ISqlQueryBuilder<int, Article> queryBuilder)
-        : base(connectionFactory, queryBuilder)
-    {
-    }
-
-    // Add custom queries here if needed
-    public async Task<IEnumerable<Article>> GetRecentAsync(int days)
-    {
-        using var connection = await _connectionFactory.CreateConnectionAsync();
-        var sql = "SELECT * FROM articles WHERE created_at > @Since ORDER BY created_at DESC";
-        return await connection.QueryAsync<Article>(sql, new { Since = DateTime.UtcNow.AddDays(-days) });
-    }
-}
-```
-
-### 3. Register Services (Dependency Injection)
-
-```csharp
-// In Program.cs or Startup.cs
-services.AddSingleton<IDbConnectionFactory>(
-    new NpgsqlConnectionFactory("Host=localhost;Database=mydb;Username=user;Password=pass"));
-
-// Choose your naming convention
-services.AddSingleton<IDbNameAdapter, SnakeCaseAdapter>(); // PascalCase -> snake_case
-// OR
-services.AddSingleton<IDbNameAdapter, AttributeAdapter>(); // Use [Table]/[Column] attributes
-
-// Register query builder
-services.AddScoped<ISqlQueryBuilder<int, Article>, PostgreSqlQueryBuilder<int, Article>>();
-
-// Register repository
-services.AddScoped<ArticleRepository>();
-```
-
-### 4. Use in Your Services
-
-```csharp
-public class ArticleService
-{
-    private readonly ArticleRepository _repository;
-
-    public ArticleService(ArticleRepository repository)
-    {
-        _repository = repository;
-    }
-
-    public async Task<Article?> GetArticle(int id)
-    {
-        return await _repository.GetByIdAsync(id);
-    }
-
-    public async Task<Article> CreateArticle(Article article)
-    {
-        article.CreatedAt = DateTime.UtcNow;
-        return await _repository.AddAsync(article);
-    }
-}
-```
-
-## Name Adapters
-
-### SnakeCaseAdapter (Recommended for PostgreSQL)
-
-Converts C# PascalCase to PostgreSQL snake_case:
-
-```csharp
-// C# Entity
-public class NewsArticle { public int ArticleId { get; set; } }
-
-// SQL (automatic conversion)
-// Table: news_article
-// Column: article_id
-```
-
-### AttributeAdapter
-
-Uses Data Annotations attributes:
-
-```csharp
-using System.ComponentModel.DataAnnotations.Schema;
-
-[Table("custom_table_name")]
-public class Article
-{
-    [Column("article_id")]
-    public int Id { get; set; }
-
-    [Column("article_title")]
-    public string Title { get; set; }
-}
-```
-
-## Advanced Usage
-
-### Custom Query Methods
-
-Extend `DapperRepository` for custom queries:
-
-```csharp
-public class ArticleRepository : DapperRepository<int, Article>
-{
-    public async Task<IEnumerable<Article>> SearchByTitleAsync(string searchTerm)
-    {
-        using var connection = await _connectionFactory.CreateConnectionAsync();
-        var sql = "SELECT * FROM articles WHERE title ILIKE @SearchTerm";
-        return await connection.QueryAsync<Article>(sql, new { SearchTerm = $"%{searchTerm}%" });
-    }
-}
-```
-
-### Override Base Methods
-
-```csharp
-public override async Task<Article> AddAsync(Article entity, CancellationToken cancellationToken = default)
-{
-    // Add custom logic before/after insert
-    entity.CreatedAt = DateTime.UtcNow;
-    entity.Slug = GenerateSlug(entity.Title);
-
-    return await base.AddAsync(entity, cancellationToken);
-}
-```
-
-## Benefits
-
-### Before (Manual SQL in each repository)
-
-```csharp
-public class ArticleRepository
-{
-    public async Task<Article?> GetByIdAsync(int id)
-    {
-        const string sql = "SELECT * FROM articles WHERE id = @Id";
-        using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
-        return await connection.QuerySingleOrDefaultAsync<Article>(sql, new { Id = id });
-    }
-
-    public async Task<Article> AddAsync(Article article)
-    {
-        const string sql = @"
-            INSERT INTO articles (title, content, created_at)
-            VALUES (@Title, @Content, @CreatedAt)
-            RETURNING id";
-        using var connection = new NpgsqlConnection(_connectionString);
-        await connection.OpenAsync();
-        article.Id = await connection.ExecuteScalarAsync<int>(sql, article);
-        return article;
-    }
-
-    // ... 3-5 more methods with similar boilerplate
-}
-```
-
-### After (Using Framework)
-
-```csharp
-public class ArticleRepository : DapperRepository<int, Article>
-{
-    public ArticleRepository(
-        IDbConnectionFactory connectionFactory,
-        ISqlQueryBuilder<int, Article> queryBuilder)
-        : base(connectionFactory, queryBuilder) { }
-
-    // All CRUD methods inherited - zero boilerplate!
-    // Only add custom queries specific to this entity
-}
-```
-
-**Result**: 30-40% less code, easier to test, consistent patterns.
-
-## Testing
-
-Unit tests use xUnit and Moq:
-
-```csharp
-[Fact]
-public void SnakeCaseAdapter_ConvertsTableName()
-{
-    var adapter = new SnakeCaseAdapter();
-    var tableName = adapter.GetTableName<NewsArticle>();
-    Assert.Equal("news_article", tableName);
-}
-
-[Fact]
-public void PostgreSqlQueryBuilder_BuildsInsertWithReturning()
-{
-    var adapter = new SnakeCaseAdapter();
-    var builder = new PostgreSqlQueryBuilder<int, Article>(adapter);
-    var sql = builder.BuildInsert(new[] { "Title", "Content" });
-    
-    Assert.Contains("INSERT INTO articles", sql);
-    Assert.Contains("RETURNING id", sql);
-}
-```
+- `src/Untout.Framework.Persistence/Untout.Framework.Persistence.csproj`
+- `src/Untout.Framework.Persistence.PostgreSql/Untout.Framework.Persistence.PostgreSql.csproj`
 
 ## Roadmap
 
@@ -302,7 +80,7 @@ This framework was extracted from production codebases at Lans Untout. Contribut
 
 ## License
 
-MIT License - see LICENSE file for details
+MIT License - see `LICENSE` file for details.
 
 ## Support
 
