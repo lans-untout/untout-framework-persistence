@@ -1,9 +1,9 @@
+namespace Untout.Framework.Persistence.PostgreSql.Adapters;
+
 using System;
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 using Untout.Framework.Persistence.Interfaces;
-
-namespace Untout.Framework.Persistence.PostgreSql.Adapters;
 
 /// <summary>
 /// Attribute-based name adapter that uses [Table] and [Column] attributes

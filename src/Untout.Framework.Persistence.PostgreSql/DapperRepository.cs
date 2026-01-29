@@ -1,14 +1,9 @@
-using System;
-using System.Collections.Generic;
+namespace Untout.Framework.Persistence.PostgreSql;
+
 using System.Data;
-using System.Linq;
 using System.Reflection;
-using System.Threading;
-using System.Threading.Tasks;
 using Dapper;
 using Untout.Framework.Persistence.Interfaces;
-
-namespace Untout.Framework.Persistence.PostgreSql;
 
 /// <summary>
 /// Base repository implementation using Dapper and PostgreSQL query builders

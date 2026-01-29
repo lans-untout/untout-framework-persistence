@@ -1,7 +1,7 @@
+namespace Untout.Framework.Persistence.Tests.Adapters;
+
 using Xunit;
 using Untout.Framework.Persistence.PostgreSql.Adapters;
-
-namespace Untout.Framework.Persistence.Tests.Adapters;
 
 public class SnakeCaseAdapterTests
 {

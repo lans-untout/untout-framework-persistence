@@ -1,10 +1,10 @@
+namespace Untout.Framework.Persistence.PostgreSql;
+
 using System;
 using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 using Npgsql;
-
-namespace Untout.Framework.Persistence.PostgreSql;
 
 /// <summary>
 /// PostgreSQL connection factory implementation

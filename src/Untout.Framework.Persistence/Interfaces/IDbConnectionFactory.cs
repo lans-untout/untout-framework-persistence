@@ -1,8 +1,8 @@
+namespace Untout.Framework.Persistence.Interfaces;
+
 using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
-
-namespace Untout.Framework.Persistence.Interfaces;
 
 /// <summary>
 /// Factory for creating database connections

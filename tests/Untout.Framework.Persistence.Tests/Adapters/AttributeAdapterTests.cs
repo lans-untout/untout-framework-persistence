@@ -1,9 +1,9 @@
+namespace Untout.Framework.Persistence.Tests.Adapters;
+
 using System.ComponentModel.DataAnnotations.Schema;
 using Xunit;
 using Untout.Framework.Persistence.PostgreSql.Adapters;
 using Untout.Framework.Persistence.Interfaces;
-
-namespace Untout.Framework.Persistence.Tests.Adapters;
 
 public class AttributeAdapterTests
 {
