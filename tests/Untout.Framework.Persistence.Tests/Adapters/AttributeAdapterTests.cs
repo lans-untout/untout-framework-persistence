@@ -72,14 +72,4 @@ public class AttributeAdapterTests
     {
         public int Id { get; set; }
     }
-
-    private class EntityWithColumnAttribute : IEntity<int>
-    {
-        public int Id { get; set; }
-
-        [Column("custom_column")]
-        public string CustomField { get; set; } = string.Empty;
-
-        public string RegularField { get; set; } = string.Empty;
-    }
 }

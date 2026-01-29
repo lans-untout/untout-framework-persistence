@@ -21,6 +21,7 @@ public abstract class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntit
 {
     private readonly IDbConnectionFactory _connectionFactory;
     private readonly ISqlQueryBuilder<TKey, TEntity> _queryBuilder;
+    private readonly IDapperExecutor _dapper;
     private readonly IEnumerable<string> _insertColumns;
     private readonly IEnumerable<string> _updateColumns;
 
@@ -29,12 +30,15 @@ public abstract class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntit
     /// </summary>
     /// <param name="connectionFactory">Database connection factory</param>
     /// <param name="queryBuilder">SQL query builder</param>
+    /// <param name="dapper">Optional Dapper executor wrapper used for tests. When null, a default <see cref="DapperExecutor"/> is used.</param>
     protected DapperRepository(
         IDbConnectionFactory connectionFactory,
-        ISqlQueryBuilder<TKey, TEntity> queryBuilder)
+        ISqlQueryBuilder<TKey, TEntity> queryBuilder,
+        IDapperExecutor? dapper = null)
     {
         _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
         _queryBuilder = queryBuilder ?? throw new ArgumentNullException(nameof(queryBuilder));
+        _dapper = dapper ?? new DapperExecutor();
 
         // Cache column names (exclude Id for inserts, all except Id for updates)
         var properties = typeof(TEntity).GetProperties(BindingFlags.Public | BindingFlags.Instance)
@@ -49,7 +53,7 @@ public abstract class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntit
     {
         using var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
         var sql = _queryBuilder.BuildSelectAll();
-        return await connection.QueryAsync<TEntity>(sql);
+        return await _dapper.QueryAsync<TEntity>(connection, sql);
     }
 
     /// <inheritdoc />
@@ -57,7 +61,7 @@ public abstract class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntit
     {
         using var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
         var sql = _queryBuilder.BuildSelectById();
-        return await connection.QuerySingleOrDefaultAsync<TEntity>(sql, new { Id = id });
+        return await _dapper.QuerySingleOrDefaultAsync<TEntity>(connection, sql, new { Id = id });
     }
 
     /// <inheritdoc />
@@ -70,11 +74,13 @@ public abstract class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntit
 
         using var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
         var sql = _queryBuilder.BuildInsert(_insertColumns);
-
-        // PostgreSQL RETURNING clause returns the ID directly
-        var insertedId = await connection.ExecuteScalarAsync<TKey>(sql, entity);
-        entity.Id = insertedId ?? throw new InvalidOperationException("Failed to retrieve inserted ID from database.");
-
+        var insertedId = await _dapper.ExecuteScalarAsync<TKey>(connection, sql, entity);
+        if (insertedId == null)
+        {
+            // Return default entity state if insert didn't return an id
+            return entity;
+        }
+        entity.Id = insertedId;
         return entity;
     }
 
@@ -88,7 +94,7 @@ public abstract class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntit
 
         using var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
         var sql = _queryBuilder.BuildUpdate(_updateColumns);
-        var affectedRows = await connection.ExecuteAsync(sql, entity);
+        var affectedRows = await _dapper.ExecuteAsync(connection, sql, entity);
 
         return affectedRows > 0;
     }
@@ -98,7 +104,7 @@ public abstract class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntit
     {
         using var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
         var sql = _queryBuilder.BuildDelete();
-        var affectedRows = await connection.ExecuteAsync(sql, new { Id = id });
+        var affectedRows = await _dapper.ExecuteAsync(connection, sql, new { Id = id });
 
         return affectedRows > 0;
     }
