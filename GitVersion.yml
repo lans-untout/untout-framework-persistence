@@ -1,0 +1,13 @@
+mode: ContinuousDeployment
+branches:
+  main:
+    tag: ''
+    increment: Patch
+  feature:
+    tag: alpha
+    increment: Minor
+  develop:
+    tag: beta
+    increment: Minor
+ignore:
+  sha: []
