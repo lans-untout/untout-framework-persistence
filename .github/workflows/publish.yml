@@ -3,6 +3,10 @@ name: Publish NuGet Package
 on:
   push:
     branches: [main]
+    paths:
+      - 'src/**'
+      - 'tests/**'
+      - '*.csproj'
   release:
     types: [published]
   workflow_dispatch:
