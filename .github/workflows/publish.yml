@@ -4,11 +4,6 @@ on:
   release:
     types: [published]
   workflow_dispatch:
-    inputs:
-      version:
-        description: 'Version to publish (optional, auto-generated if not provided)'
-        required: false
-        default: ''
 
 jobs:
   publish:
@@ -20,24 +15,29 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        fetch-depth: 0
+
+    - name: Install GitVersion
+      uses: gittools/actions/gitversion/setup@v1.1.1
+      with:
+        versionSpec: '5.x'
+
+    - name: Determine Version
+      id: gitversion
+      uses: gittools/actions/gitversion/execute@v1.1.1
+      with:
+        useConfigFile: true
+
+    - name: Display Version
+      run: |
+        echo "SemVer: ${{ steps.gitversion.outputs.semVer }}"
+        echo "NuGetVersionV2: ${{ steps.gitversion.outputs.nuGetVersionV2 }}"
 
     - name: Setup .NET
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '8.0.x'
-
-    - name: Generate version
-      id: version
-      run: |
-        if [ -n "${{ github.event.inputs.version }}" ]; then
-          VERSION="${{ github.event.inputs.version }}"
-        elif [ -n "${{ github.event.release.tag_name }}" ]; then
-          VERSION="${{ github.event.release.tag_name }}"
-        else
-          VERSION="0.1.0-alpha.${{ github.run_number }}"
-        fi
-        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
-        echo "Generated version: $VERSION"
 
     - name: Restore dependencies
       run: dotnet restore
@@ -54,7 +54,7 @@ jobs:
           --configuration Release \
           --no-build \
           --output ./nupkgs \
-          -p:PackageVersion=${{ steps.version.outputs.VERSION }}
+          -p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersionV2 }}
 
     - name: Pack PostgreSQL Library
       run: |
@@ -62,7 +62,7 @@ jobs:
           --configuration Release \
           --no-build \
           --output ./nupkgs \
-          -p:PackageVersion=${{ steps.version.outputs.VERSION }}
+          -p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersionV2 }}
 
     - name: Publish to GitHub Packages
       run: |
