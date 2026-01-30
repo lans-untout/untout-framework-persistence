@@ -6,8 +6,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 'Version to publish (e.g., 0.1.0-preview)'
-        required: true
+        description: 'Version to publish (optional, auto-generated if not provided)'
+        required: false
+        default: ''
 
 jobs:
   publish:
@@ -25,6 +26,19 @@ jobs:
       with:
         dotnet-version: '8.0.x'
 
+    - name: Generate version
+      id: version
+      run: |
+        if [ -n "${{ github.event.inputs.version }}" ]; then
+          VERSION="${{ github.event.inputs.version }}"
+        elif [ -n "${{ github.event.release.tag_name }}" ]; then
+          VERSION="${{ github.event.release.tag_name }}"
+        else
+          VERSION="0.1.0-alpha.${{ github.run_number }}"
+        fi
+        echo "VERSION=$VERSION" >> $GITHUB_OUTPUT
+        echo "Generated version: $VERSION"
+
     - name: Restore dependencies
       run: dotnet restore
 
@@ -40,7 +54,7 @@ jobs:
           --configuration Release \
           --no-build \
           --output ./nupkgs \
-          -p:PackageVersion=${{ github.event.inputs.version || github.event.release.tag_name }}
+          -p:PackageVersion=${{ steps.version.outputs.VERSION }}
 
     - name: Pack PostgreSQL Library
       run: |
@@ -48,7 +62,7 @@ jobs:
           --configuration Release \
           --no-build \
           --output ./nupkgs \
-          -p:PackageVersion=${{ github.event.inputs.version || github.event.release.tag_name }}
+          -p:PackageVersion=${{ steps.version.outputs.VERSION }}
 
     - name: Publish to GitHub Packages
       run: |
