@@ -16,7 +16,7 @@ using Untout.Framework.Persistence.Interfaces;
 /// </summary>
 /// <typeparam name="TKey">Entity primary key type</typeparam>
 /// <typeparam name="TEntity">Entity type</typeparam>
-public abstract class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
+public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
     where TEntity : class, IEntity<TKey>
 {
     private readonly IDbConnectionFactory _connectionFactory;

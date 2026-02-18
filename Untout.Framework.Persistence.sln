@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio Version 17
-VisualStudioVersion = 17.0.31903.59
+# Visual Studio Version 18
+VisualStudioVersion = 18.3.11505.172 d18.3
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{827E0CD3-B72D-47B6-A68D-7590B98EB39B}"
 EndProject
@@ -12,6 +12,10 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{0AB3BF05-4346-4AA6-1389-037BE0695223}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Untout.Framework.Persistence.Tests", "tests\Untout.Framework.Persistence.Tests\Untout.Framework.Persistence.Tests.csproj", "{F31A49F2-B349-4BD5-A547-A1A87853B608}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = ".github", ".github", "{2FEE9554-B904-4559-9266-D02C7F470FDF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "workflows", "workflows", "{7549BE33-B46F-4878-8DCB-93F1E275948A}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -67,5 +71,6 @@ Global
 		{A06BE45E-75A9-49E1-B246-9A2CC6CDC538} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{953C74D8-8A3F-4D93-9CF0-4D11F0CAD455} = {827E0CD3-B72D-47B6-A68D-7590B98EB39B}
 		{F31A49F2-B349-4BD5-A547-A1A87853B608} = {0AB3BF05-4346-4AA6-1389-037BE0695223}
+		{7549BE33-B46F-4878-8DCB-93F1E275948A} = {2FEE9554-B904-4559-9266-D02C7F470FDF}
 	EndGlobalSection
 EndGlobal
