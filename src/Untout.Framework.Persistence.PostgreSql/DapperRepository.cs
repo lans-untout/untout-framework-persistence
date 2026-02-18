@@ -31,7 +31,7 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
     /// <param name="connectionFactory">Database connection factory</param>
     /// <param name="queryBuilder">SQL query builder</param>
     /// <param name="dapper">Optional Dapper executor wrapper used for tests. When null, a default <see cref="DapperExecutor"/> is used.</param>
-    protected DapperRepository(
+    public DapperRepository(
         IDbConnectionFactory connectionFactory,
         ISqlQueryBuilder<TKey, TEntity> queryBuilder,
         IDapperExecutor? dapper = null)

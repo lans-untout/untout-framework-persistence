@@ -1,13 +1,12 @@
 namespace Untout.Framework.Persistence.Tests.Repositories;
 
+using Moq;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using Dapper;
-using Moq;
 using Untout.Framework.Persistence.Interfaces;
 using Untout.Framework.Persistence.PostgreSql;
 using Xunit;
@@ -17,20 +16,19 @@ public class DapperRepositoryTests
     private readonly Mock<IDbConnection> _mockConnection;
     private readonly Mock<IDbConnectionFactory> _mockFactory;
     private readonly Mock<ISqlQueryBuilder<int, TestEntity>> _mockQueryBuilder;
-    private readonly Mock<IDbNameAdapter> _mockNameAdapter;
-    private readonly TestRepository _repository;
+    private readonly Mock<IDapperExecutor> _mockDapperExecutor;
 
     public DapperRepositoryTests()
     {
         _mockConnection = new Mock<IDbConnection>();
         _mockFactory = new Mock<IDbConnectionFactory>();
         _mockQueryBuilder = new Mock<ISqlQueryBuilder<int, TestEntity>>();
-        _mockNameAdapter = new Mock<IDbNameAdapter>();
 
         _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(_mockConnection.Object);
 
-        _repository = new TestRepository(_mockFactory.Object, _mockQueryBuilder.Object, _mockNameAdapter.Object);
+        _mockDapperExecutor = new Mock<IDapperExecutor>();
+
     }
 
     [Fact]
@@ -46,16 +44,11 @@ public class DapperRepositoryTests
             new TestEntity { Id = 1, Name = "Test1" },
             new TestEntity { Id = 2, Name = "Test2" }
         };
-
-        // Arrange DapperExecutor mock to avoid mocking extension methods on IDbConnection
-        var mockDapper = new Mock<IDapperExecutor>();
-        mockDapper.Setup(d => d.QueryAsync<TestEntity>(_mockConnection.Object, expectedSql, null))
+        _mockDapperExecutor.Setup(d => d.QueryAsync<TestEntity>(_mockConnection.Object, expectedSql, null))
             .ReturnsAsync(expectedEntities);
 
-        // Recreate repository with DapperExecutor mock
-        var repository = new TestRepository(_mockFactory.Object, _mockQueryBuilder.Object, _mockNameAdapter.Object, mockDapper.Object);
-
         // Act
+        var repository = CreateRepository();
         var result = await repository.GetAllAsync();
 
         // Assert
@@ -74,14 +67,11 @@ public class DapperRepositoryTests
             .Returns(expectedSql);
 
         var expectedEntity = new TestEntity { Id = entityId, Name = "Test42" };
-
-        var mockDapper = new Mock<IDapperExecutor>();
-        mockDapper.Setup(d => d.QuerySingleOrDefaultAsync<TestEntity>(_mockConnection.Object, expectedSql, It.IsAny<object>()))
+        _mockDapperExecutor.Setup(d => d.QuerySingleOrDefaultAsync<TestEntity>(_mockConnection.Object, expectedSql, It.IsAny<object>()))
             .ReturnsAsync(expectedEntity);
 
-        var repository = new TestRepository(_mockFactory.Object, _mockQueryBuilder.Object, _mockNameAdapter.Object, mockDapper.Object);
-
         // Act
+        var repository = CreateRepository();
         var result = await repository.GetByIdAsync(entityId);
 
         // Assert
@@ -102,12 +92,10 @@ public class DapperRepositoryTests
         _mockQueryBuilder.Setup(b => b.BuildInsert(It.IsAny<IEnumerable<string>>()))
             .Returns(expectedSql);
 
-        var mockDapper = new Mock<IDapperExecutor>();
-        mockDapper.Setup(d => d.ExecuteScalarAsync<int>(_mockConnection.Object, expectedSql, It.IsAny<object>()))
+        _mockDapperExecutor.Setup(d => d.ExecuteScalarAsync<int>(_mockConnection.Object, expectedSql, It.IsAny<object>()))
             .ReturnsAsync(expectedId);
 
-        var repository = new TestRepository(_mockFactory.Object, _mockQueryBuilder.Object, _mockNameAdapter.Object, mockDapper.Object);
-
+        var repository = CreateRepository();
         var result = await repository.AddAsync(entity);
 
         Assert.Equal(expectedId, result.Id);
@@ -124,12 +112,10 @@ public class DapperRepositoryTests
         _mockQueryBuilder.Setup(b => b.BuildUpdate(It.IsAny<IEnumerable<string>>()))
             .Returns(expectedSql);
 
-        var mockDapper = new Mock<IDapperExecutor>();
-        mockDapper.Setup(d => d.ExecuteAsync(_mockConnection.Object, expectedSql, It.IsAny<object>()))
+        _mockDapperExecutor.Setup(d => d.ExecuteAsync(_mockConnection.Object, expectedSql, It.IsAny<object>()))
             .ReturnsAsync(1);
 
-        var repository = new TestRepository(_mockFactory.Object, _mockQueryBuilder.Object, _mockNameAdapter.Object, mockDapper.Object);
-
+        var repository = CreateRepository();
         var result = await repository.UpdateAsync(entity);
 
         Assert.True(result);
@@ -142,16 +128,13 @@ public class DapperRepositoryTests
         // Arrange
         var entityId = 77;
         var expectedSql = "DELETE FROM test_entities WHERE id = @Id";
-
         _mockQueryBuilder.Setup(b => b.BuildDelete())
             .Returns(expectedSql);
 
-        var mockDapper = new Mock<IDapperExecutor>();
-        mockDapper.Setup(d => d.ExecuteAsync(_mockConnection.Object, expectedSql, It.IsAny<object>()))
+        _mockDapperExecutor.Setup(d => d.ExecuteAsync(_mockConnection.Object, expectedSql, It.IsAny<object>()))
             .ReturnsAsync(1);
 
-        var repository = new TestRepository(_mockFactory.Object, _mockQueryBuilder.Object, _mockNameAdapter.Object, mockDapper.Object);
-
+        var repository = CreateRepository();
         var result = await repository.DeleteAsync(entityId);
 
         Assert.True(result);
@@ -168,12 +151,10 @@ public class DapperRepositoryTests
         _mockQueryBuilder.Setup(b => b.BuildInsert(It.IsAny<IEnumerable<string>>()))
             .Returns(expectedSql);
 
-        var mockDapper = new Mock<IDapperExecutor>();
-        mockDapper.Setup(d => d.ExecuteScalarAsync<int>(_mockConnection.Object, expectedSql, It.IsAny<object>()))
+        _mockDapperExecutor.Setup(d => d.ExecuteScalarAsync<int>(_mockConnection.Object, expectedSql, It.IsAny<object>()))
             .ReturnsAsync(0);
 
-        var repository = new TestRepository(_mockFactory.Object, _mockQueryBuilder.Object, _mockNameAdapter.Object, mockDapper.Object);
-
+        var repository = CreateRepository();
         var result = await repository.AddAsync(entity);
 
         Assert.Equal(0, result.Id);
@@ -189,12 +170,10 @@ public class DapperRepositoryTests
         _mockQueryBuilder.Setup(b => b.BuildUpdate(It.IsAny<IEnumerable<string>>()))
             .Returns(expectedSql);
 
-        var mockDapper = new Mock<IDapperExecutor>();
-        mockDapper.Setup(d => d.ExecuteAsync(_mockConnection.Object, expectedSql, It.IsAny<object>()))
+        _mockDapperExecutor.Setup(d => d.ExecuteAsync(_mockConnection.Object, expectedSql, It.IsAny<object>()))
             .ReturnsAsync(0);
 
-        var repository = new TestRepository(_mockFactory.Object, _mockQueryBuilder.Object, _mockNameAdapter.Object, mockDapper.Object);
-
+        var repository = CreateRepository();
         var result = await repository.UpdateAsync(entity);
 
         Assert.False(result);
@@ -210,51 +189,25 @@ public class DapperRepositoryTests
         _mockQueryBuilder.Setup(b => b.BuildDelete())
             .Returns(expectedSql);
 
-        var mockDapper = new Mock<IDapperExecutor>();
-        mockDapper.Setup(d => d.ExecuteAsync(_mockConnection.Object, expectedSql, It.IsAny<object>()))
+        _mockDapperExecutor.Setup(d => d.ExecuteAsync(_mockConnection.Object, expectedSql, It.IsAny<object>()))
             .ReturnsAsync(0);
 
-        var repository = new TestRepository(_mockFactory.Object, _mockQueryBuilder.Object, _mockNameAdapter.Object, mockDapper.Object);
-
+        var repository = CreateRepository();
         var result = await repository.DeleteAsync(entityId);
 
         Assert.False(result);
     }
 
-    private static int GetIdFromDynamicParams(object parameters)
-    {
-        if (parameters is DynamicParameters dynamicParams)
-        {
-            try
-            {
-                return dynamicParams.Get<int>("Id");
-            }
-            catch (ArgumentException)
-            {
-                // Parameter might be named "@Id" instead of "Id"
-                return dynamicParams.Get<int>("@Id");
-            }
-        }
-        return 0;
-    }
+    private IRepository<int, TestEntity> CreateRepository()
+        => new DapperRepository<int, TestEntity>(
+        _mockFactory.Object,
+        _mockQueryBuilder.Object,
+        _mockDapperExecutor.Object);
 
     // Test entity for repository tests
     public class TestEntity : IEntity<int>
     {
         public int Id { get; set; }
         public string Name { get; set; } = string.Empty;
-    }
-
-    // Test repository implementation
-    public class TestRepository : DapperRepository<int, TestEntity>
-    {
-        public TestRepository(
-            IDbConnectionFactory connectionFactory,
-            ISqlQueryBuilder<int, TestEntity> queryBuilder,
-            IDbNameAdapter nameAdapter,
-            IDapperExecutor? dapper = null)
-            : base(connectionFactory, queryBuilder, dapper)
-        {
-        }
     }
 }
