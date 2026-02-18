@@ -1,9 +1,8 @@
-namespace Untout.Framework.Persistence.Tests.Adapters;
-
 using System.ComponentModel.DataAnnotations.Schema;
-using Xunit;
-using Untout.Framework.Persistence.PostgreSql.Adapters;
 using Untout.Framework.Persistence.Interfaces;
+using Untout.Framework.Persistence.PostgreSql.Adapters;
+
+namespace Untout.Framework.Persistence.Tests.Adapters;
 
 public class AttributeAdapterTests
 {
@@ -71,5 +70,15 @@ public class AttributeAdapterTests
     private class EntityWithoutAttribute : IEntity<int>
     {
         public int Id { get; set; }
+    }
+
+    private class EntityWithColumnAttribute : IEntity<int>
+    {
+        public int Id { get; set; }
+
+        [Column("custom_column")]
+        public string CustomField { get; set; } = string.Empty;
+
+        public string RegularField { get; set; } = string.Empty;
     }
 }

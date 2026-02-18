@@ -16,7 +16,7 @@ using Untout.Framework.Persistence.Interfaces;
 /// </summary>
 /// <typeparam name="TKey">Entity primary key type</typeparam>
 /// <typeparam name="TEntity">Entity type</typeparam>
-public abstract class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
+public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
     where TEntity : class, IEntity<TKey>
 {
     private readonly IDbConnectionFactory _connectionFactory;
@@ -31,7 +31,7 @@ public abstract class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntit
     /// <param name="connectionFactory">Database connection factory</param>
     /// <param name="queryBuilder">SQL query builder</param>
     /// <param name="dapper">Optional Dapper executor wrapper used for tests. When null, a default <see cref="DapperExecutor"/> is used.</param>
-    protected DapperRepository(
+    public DapperRepository(
         IDbConnectionFactory connectionFactory,
         ISqlQueryBuilder<TKey, TEntity> queryBuilder,
         IDapperExecutor? dapper = null)

@@ -1,4 +1,37 @@
+
 # Untout.Framework.Persistence
+
+## Usage Example
+
+Here's a minimal example of how to use the library in your .NET 8 project:
+
+```csharp
+// 1. Define your entity
+public class Article : IEntity<int>
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+}
+
+// 2. Setup dependencies (PostgreSQL example)
+var connectionFactory = new NpgsqlConnectionFactory("Host=localhost;Database=mydb;Username=myuser;Password=mypass");
+var nameAdapter = new SnakeCaseAdapter();
+var queryBuilder = new PostgreSqlQueryBuilder<int, Article>(nameAdapter);
+
+// 3. Use DapperRepository directly
+IRepository<int, Article> repository = new DapperRepository<int, Article>(
+    connectionFactory,
+    queryBuilder
+);
+
+// 4. Use the repository
+var newArticle = new Article { Title = "Hello", Content = "World" };
+await repository.AddAsync(newArticle);
+var allArticles = await repository.GetAllAsync();
+```
+
+See the `tests/` directory for more advanced usage and patterns.
 
 Lightweight persistence building blocks for .NET 8 (Dapper + PostgreSQL).
 
