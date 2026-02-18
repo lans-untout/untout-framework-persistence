@@ -1,16 +1,17 @@
-namespace Untout.Framework.Persistence.PostgreSql;
-
+using Npgsql;
 using System;
 using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
-using Npgsql;
+using Untout.Framework.Persistence.Interfaces;
+
+namespace Untout.Framework.Persistence.PostgreSql;
 
 /// <summary>
 /// PostgreSQL connection factory implementation
 /// Manages connection lifecycle using NpgsqlConnection
 /// </summary>
-public class NpgsqlConnectionFactory : Interfaces.IDbConnectionFactory
+public class NpgsqlConnectionFactory : IDbConnectionFactory
 {
     private readonly string _connectionString;
 
