@@ -1,3 +1,4 @@
+using System;
 using Untout.Framework.Persistence.PostgreSql.Adapters;
 
 namespace Untout.Framework.Persistence.Tests.Adapters;
@@ -35,20 +36,24 @@ public class SnakeCaseAdapterTests
     public void GetColumnName_ConvertsToSnakeCase(string propertyName, string expected)
     {
         // Act
-        var columnName = _adapter.GetColumnName(propertyName);
+        var columnName = _adapter.GetColumnName<TestEntity>(propertyName);
 
         // Assert
         Assert.Equal(expected, columnName);
     }
 
     [Fact]
-    public void GetColumnName_HandlesNullOrEmpty()
+    public void GetColumnName_ThrowsArgumentNullExceptionForNull()
     {
         // Act & Assert
-        Assert.Null(_adapter.GetColumnName(null!));
-        Assert.Equal(string.Empty, _adapter.GetColumnName(string.Empty));
-        // Whitespace returns whitespace (converted to lowercase) - this is expected behavior
-        Assert.Equal("   ", _adapter.GetColumnName("   "));
+        Assert.Throws<ArgumentNullException>(() => _adapter.GetColumnName<TestEntity>(null));
+    }
+
+    [Fact]
+    public void GetColumnName_ThrowsArgumentExceptionForOrEmpty()
+    {
+        // Act & Assert
+        Assert.Throws<ArgumentException>(() => _adapter.GetColumnName<TestEntity>(string.Empty));
     }
 
     private static string ConvertToSnakeCase(string input)

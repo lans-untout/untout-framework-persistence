@@ -36,7 +36,7 @@ public class PostgreSqlQueryBuilder<TKey, TEntity> : ISqlQueryBuilder<TKey, TEnt
     /// <inheritdoc />
     public string BuildSelectById()
     {
-        var idColumn = _nameAdapter.GetColumnName(nameof(IEntity<TKey>.Id));
+        var idColumn = _nameAdapter.GetColumnName<TEntity>(nameof(IEntity<TKey>.Id));
         return $"SELECT * FROM {_tableName} WHERE {idColumn} = @Id";
     }
 
@@ -48,9 +48,9 @@ public class PostgreSqlQueryBuilder<TKey, TEntity> : ISqlQueryBuilder<TKey, TEnt
             throw new ArgumentException("Columns cannot be null or empty", nameof(columns));
         }
 
-        var columnList = string.Join(", ", columns.Select(_nameAdapter.GetColumnName));
+        var columnList = string.Join(", ", columns.Select(c => _nameAdapter.GetColumnName<TEntity>(c)));
         var parameterList = string.Join(", ", columns.Select(c => $"@{c}"));
-        var idColumn = _nameAdapter.GetColumnName(nameof(IEntity<TKey>.Id));
+        var idColumn = _nameAdapter.GetColumnName<TEntity>(nameof(IEntity<TKey>.Id));
 
         // PostgreSQL RETURNING clause returns the inserted ID
         return $"INSERT INTO {_tableName} ({columnList}) VALUES ({parameterList}) RETURNING {idColumn}";
@@ -65,8 +65,8 @@ public class PostgreSqlQueryBuilder<TKey, TEntity> : ISqlQueryBuilder<TKey, TEnt
         }
 
         var setClause = string.Join(", ", columns.Select(c =>
-            $"{_nameAdapter.GetColumnName(c)} = @{c}"));
-        var idColumn = _nameAdapter.GetColumnName(nameof(IEntity<TKey>.Id));
+            $"{_nameAdapter.GetColumnName<TEntity>(c)} = @{c}"));
+        var idColumn = _nameAdapter.GetColumnName<TEntity>(nameof(IEntity<TKey>.Id));
 
         return $"UPDATE {_tableName} SET {setClause} WHERE {idColumn} = @Id";
     }
@@ -74,7 +74,7 @@ public class PostgreSqlQueryBuilder<TKey, TEntity> : ISqlQueryBuilder<TKey, TEnt
     /// <inheritdoc />
     public string BuildDelete()
     {
-        var idColumn = _nameAdapter.GetColumnName(nameof(IEntity<TKey>.Id));
+        var idColumn = _nameAdapter.GetColumnName<TEntity>(nameof(IEntity<TKey>.Id));
         return $"DELETE FROM {_tableName} WHERE {idColumn} = @Id";
     }
 }

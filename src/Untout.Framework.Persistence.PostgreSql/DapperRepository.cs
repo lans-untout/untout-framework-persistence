@@ -34,7 +34,7 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
     public DapperRepository(
         IDbConnectionFactory connectionFactory,
         ISqlQueryBuilder<TKey, TEntity> queryBuilder,
-        IDapperExecutor? dapper = null)
+        IDapperExecutor dapper = null)
     {
         _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
         _queryBuilder = queryBuilder ?? throw new ArgumentNullException(nameof(queryBuilder));
@@ -57,7 +57,7 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
     }
 
     /// <inheritdoc />
-    public virtual async Task<TEntity?> GetByIdAsync(TKey id, CancellationToken cancellationToken = default)
+    public virtual async Task<TEntity> GetByIdAsync(TKey id, CancellationToken cancellationToken = default)
     {
         using var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
         var sql = _queryBuilder.BuildSelectById();

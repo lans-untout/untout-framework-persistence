@@ -18,5 +18,5 @@ public interface IDbNameAdapter
     /// </summary>
     /// <param name="propertyName">C# property name</param>
     /// <returns>Column name to use in SQL queries</returns>
-    string GetColumnName(string propertyName);
+    string GetColumnName<T>(string propertyName) where T : class;
 }

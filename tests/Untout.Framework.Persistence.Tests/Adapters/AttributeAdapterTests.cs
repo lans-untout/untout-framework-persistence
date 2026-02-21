@@ -6,11 +6,11 @@ namespace Untout.Framework.Persistence.Tests.Adapters;
 
 public class AttributeAdapterTests
 {
-    private readonly AttributeAdapter _adapter;
+    private readonly IDbNameAdapter _adapter;
 
     public AttributeAdapterTests()
     {
-        _adapter = new AttributeAdapter();
+        _adapter = new SnakeCaseAdapter();
     }
 
     [Fact]
@@ -30,7 +30,7 @@ public class AttributeAdapterTests
         var tableName = _adapter.GetTableName<EntityWithoutAttribute>();
 
         // Assert
-        Assert.Equal("EntityWithoutAttribute", tableName);
+        Assert.Equal("entity_without_attribute", tableName);
     }
 
     [Fact]
@@ -40,24 +40,24 @@ public class AttributeAdapterTests
         var propertyName = "SomeProperty";
 
         // Act
-        var columnName = _adapter.GetColumnName(propertyName);
+        var columnName = _adapter.GetColumnName<EntityWithoutAttribute>(propertyName);
 
         // Assert
-        Assert.Equal(propertyName, columnName);
+        Assert.Equal("some_property", columnName);
     }
 
     [Fact]
     public void GetColumnName_ReturnsPropertyName_AsExpected()
     {
         // Arrange & Act
-        var columnName1 = _adapter.GetColumnName("CustomField");
-        var columnName2 = _adapter.GetColumnName("RegularField");
-        var columnName3 = _adapter.GetColumnName("SomeProperty");
+        var columnName1 = _adapter.GetColumnName<EntityWithColumnAttribute>("CustomField");
+        var columnName2 = _adapter.GetColumnName<EntityWithColumnAttribute>("RegularField");
+        var columnName3 = _adapter.GetColumnName<EntityWithoutAttribute>("SomeProperty");
 
         // Assert
-        Assert.Equal("CustomField", columnName1);
-        Assert.Equal("RegularField", columnName2);
-        Assert.Equal("SomeProperty", columnName3);
+        Assert.Equal("custom_column", columnName1);
+        Assert.Equal("regular_field", columnName2);
+        Assert.Equal("some_property", columnName3);
     }
 
     // Test entities

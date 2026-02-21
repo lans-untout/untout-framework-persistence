@@ -1,6 +1,8 @@
 namespace Untout.Framework.Persistence.PostgreSql.Adapters;
 
+using System;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Linq;
 using System.Text.RegularExpressions;
 using Untout.Framework.Persistence.Interfaces;
 
@@ -27,8 +29,23 @@ public class SnakeCaseAdapter : IDbNameAdapter
     }
 
     /// <inheritdoc />
-    public string GetColumnName(string propertyName)
+    public string GetColumnName<T>(string propertyName) where T : class
     {
+        ArgumentException.ThrowIfNullOrWhiteSpace(propertyName, nameof(propertyName));
+        var propertyInfo = typeof(T).GetProperty(propertyName);
+        if (propertyInfo == null)
+        {
+            return ToSnakeCase(propertyName);
+        }
+
+        // Check for [Column] attribute first
+        var columnAttr = propertyInfo.GetCustomAttributes(typeof(ColumnAttribute), false).FirstOrDefault() as ColumnAttribute;
+        if (columnAttr != null)
+        {
+            return columnAttr.Name;
+        }
+
+        // Fallback to snake_case conversion
         return ToSnakeCase(propertyName);
     }
 
