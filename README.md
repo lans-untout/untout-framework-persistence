@@ -31,6 +31,31 @@ await repository.AddAsync(newArticle);
 var allArticles = await repository.GetAllAsync();
 ```
 
+### With Logging
+
+To enable SQL query logging during development:
+
+```csharp
+// Use ConsolePersistenceLogger for development/debugging
+var logger = ConsolePersistenceLogger.Instance;
+
+IRepository<int, Article> repository = new DapperRepository<int, Article>(
+    connectionFactory,
+    queryBuilder,
+    dapper: null,  // Use default DapperExecutor
+    logger: logger // Enable console logging
+);
+
+// In production, use NullPersistenceLogger (default) or integrate Serilog/NLog
+```
+
+The framework provides:
+- `IPersistenceLogger` - logging abstraction
+- `NullPersistenceLogger` - no-op logger (default, zero overhead)
+- `ConsolePersistenceLogger` - console logger for development
+
+You can implement `IPersistenceLogger` to integrate with Serilog, NLog, or any logging framework.
+
 See the `tests/` directory for more advanced usage and patterns.
 
 Lightweight persistence building blocks for .NET 8 (Dapper + PostgreSQL).

@@ -7,15 +7,14 @@ using Dapper;
 
 internal class DapperExecutor : IDapperExecutor
 {
-    public Task<IEnumerable<T>> QueryAsync<T>(IDbConnection connection, string sql, object param = null)
-        => connection.QueryAsync<T>(sql, param);
+    public Task<IEnumerable<T>> QueryAsync<T>(IDbConnection connection, CommandDefinition command)
+        => connection.QueryAsync<T>(command);
 
-    public Task<T> QuerySingleOrDefaultAsync<T>(IDbConnection connection, string sql, object param = null)
-        => connection.QuerySingleOrDefaultAsync<T>(sql, param);
+    public Task<T> QuerySingleOrDefaultAsync<T>(IDbConnection connection, CommandDefinition command)
+        => connection.QuerySingleOrDefaultAsync<T>(command);
+    public Task<int> ExecuteAsync(IDbConnection connection, CommandDefinition command)
+        => connection.ExecuteAsync(command);
 
-    public Task<int> ExecuteAsync(IDbConnection connection, string sql, object param = null)
-        => connection.ExecuteAsync(sql, param);
-
-    public Task<T> ExecuteScalarAsync<T>(IDbConnection connection, string sql, object param = null)
-        => connection.ExecuteScalarAsync<T>(sql, param);
+    public Task<T> ExecuteScalarAsync<T>(IDbConnection connection, CommandDefinition command)
+        => connection.ExecuteScalarAsync<T>(command);
 }

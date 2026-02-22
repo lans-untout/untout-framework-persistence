@@ -1,5 +1,6 @@
 namespace Untout.Framework.Persistence.Tests.Repositories;
 
+using Dapper;
 using Moq;
 using System;
 using System.Collections.Generic;
@@ -44,7 +45,8 @@ public class DapperRepositoryTests
             new TestEntity { Id = 1, Name = "Test1" },
             new TestEntity { Id = 2, Name = "Test2" }
         };
-        _mockDapperExecutor.Setup(d => d.QueryAsync<TestEntity>(_mockConnection.Object, expectedSql, null))
+
+        _mockDapperExecutor.Setup(d => d.QueryAsync<TestEntity>(_mockConnection.Object, It.Is<CommandDefinition>(c => c.CommandText == expectedSql)))
             .ReturnsAsync(expectedEntities);
 
         // Act
@@ -67,7 +69,7 @@ public class DapperRepositoryTests
             .Returns(expectedSql);
 
         var expectedEntity = new TestEntity { Id = entityId, Name = "Test42" };
-        _mockDapperExecutor.Setup(d => d.QuerySingleOrDefaultAsync<TestEntity>(_mockConnection.Object, expectedSql, It.IsAny<object>()))
+        _mockDapperExecutor.Setup(d => d.QuerySingleOrDefaultAsync<TestEntity>(_mockConnection.Object, It.Is<CommandDefinition>(c => c.CommandText == expectedSql)))
             .ReturnsAsync(expectedEntity);
 
         // Act
@@ -92,7 +94,7 @@ public class DapperRepositoryTests
         _mockQueryBuilder.Setup(b => b.BuildInsert(It.IsAny<IEnumerable<string>>()))
             .Returns(expectedSql);
 
-        _mockDapperExecutor.Setup(d => d.ExecuteScalarAsync<int>(_mockConnection.Object, expectedSql, It.IsAny<object>()))
+        _mockDapperExecutor.Setup(d => d.ExecuteScalarAsync<int>(_mockConnection.Object, It.Is<CommandDefinition>(c => c.CommandText == expectedSql)))
             .ReturnsAsync(expectedId);
 
         var repository = CreateRepository();
@@ -112,7 +114,7 @@ public class DapperRepositoryTests
         _mockQueryBuilder.Setup(b => b.BuildUpdate(It.IsAny<IEnumerable<string>>()))
             .Returns(expectedSql);
 
-        _mockDapperExecutor.Setup(d => d.ExecuteAsync(_mockConnection.Object, expectedSql, It.IsAny<object>()))
+        _mockDapperExecutor.Setup(d => d.ExecuteAsync(_mockConnection.Object, It.Is<CommandDefinition>(c => c.CommandText == expectedSql)))
             .ReturnsAsync(1);
 
         var repository = CreateRepository();
@@ -131,7 +133,7 @@ public class DapperRepositoryTests
         _mockQueryBuilder.Setup(b => b.BuildDelete())
             .Returns(expectedSql);
 
-        _mockDapperExecutor.Setup(d => d.ExecuteAsync(_mockConnection.Object, expectedSql, It.IsAny<object>()))
+        _mockDapperExecutor.Setup(d => d.ExecuteAsync(_mockConnection.Object, It.Is<CommandDefinition>(c => c.CommandText == expectedSql)))
             .ReturnsAsync(1);
 
         var repository = CreateRepository();
@@ -151,7 +153,7 @@ public class DapperRepositoryTests
         _mockQueryBuilder.Setup(b => b.BuildInsert(It.IsAny<IEnumerable<string>>()))
             .Returns(expectedSql);
 
-        _mockDapperExecutor.Setup(d => d.ExecuteScalarAsync<int>(_mockConnection.Object, expectedSql, It.IsAny<object>()))
+        _mockDapperExecutor.Setup(d => d.ExecuteScalarAsync<int>(_mockConnection.Object, It.Is<CommandDefinition>(c => c.CommandText == expectedSql)))
             .ReturnsAsync(0);
 
         var repository = CreateRepository();
@@ -170,7 +172,7 @@ public class DapperRepositoryTests
         _mockQueryBuilder.Setup(b => b.BuildUpdate(It.IsAny<IEnumerable<string>>()))
             .Returns(expectedSql);
 
-        _mockDapperExecutor.Setup(d => d.ExecuteAsync(_mockConnection.Object, expectedSql, It.IsAny<object>()))
+        _mockDapperExecutor.Setup(d => d.ExecuteAsync(_mockConnection.Object, It.Is<CommandDefinition>(c => c.CommandText == expectedSql)))
             .ReturnsAsync(0);
 
         var repository = CreateRepository();
@@ -189,7 +191,7 @@ public class DapperRepositoryTests
         _mockQueryBuilder.Setup(b => b.BuildDelete())
             .Returns(expectedSql);
 
-        _mockDapperExecutor.Setup(d => d.ExecuteAsync(_mockConnection.Object, expectedSql, It.IsAny<object>()))
+        _mockDapperExecutor.Setup(d => d.ExecuteAsync(_mockConnection.Object, It.Is<CommandDefinition>(c => c.CommandText == expectedSql)))
             .ReturnsAsync(0);
 
         var repository = CreateRepository();

@@ -25,7 +25,7 @@ public interface IRepository<TKey, TEntity> where TEntity : class, IEntity<TKey>
     /// <param name="id">Entity ID</param>
     /// <param name="cancellationToken">Cancellation token</param>
     /// <returns>Entity if found, null otherwise</returns>
-    Task<TEntity?> GetByIdAsync(TKey id, CancellationToken cancellationToken = default);
+    Task<TEntity> GetByIdAsync(TKey id, CancellationToken cancellationToken = default);
 
     /// <summary>
     /// Inserts a new entity into the database
