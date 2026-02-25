@@ -20,7 +20,6 @@ using Untout.Framework.Persistence.Interfaces;
 public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
     where TEntity : class, IEntity<TKey>
 {
-    private readonly IDbConnectionFactory _connectionFactory;
     private readonly ISqlQueryBuilder<TKey, TEntity> _queryBuilder;
     private readonly IDapperExecutor _dapper;
     private readonly IPersistenceLogger _logger;
@@ -35,14 +34,15 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
     /// <param name="dapper">Optional Dapper executor wrapper used for tests. When null, a default <see cref="DapperExecutor"/> is used.</param>
     /// <param name="logger">Optional logger for SQL queries and operations. When null, a <see cref="NullPersistenceLogger"/> is used.</param>
     public DapperRepository(
-        IDbConnectionFactory connectionFactory,
         ISqlQueryBuilder<TKey, TEntity> queryBuilder,
-        IDapperExecutor dapper = null,
+        IDapperExecutor dapper,
         IPersistenceLogger logger = null)
     {
-        _connectionFactory = connectionFactory ?? throw new ArgumentNullException(nameof(connectionFactory));
-        _queryBuilder = queryBuilder ?? throw new ArgumentNullException(nameof(queryBuilder));
-        _dapper = dapper ?? new DapperExecutor();
+        ArgumentNullException.ThrowIfNull(queryBuilder, nameof(queryBuilder));
+        ArgumentNullException.ThrowIfNull(dapper, nameof(dapper));
+
+        _queryBuilder = queryBuilder;
+        _dapper = dapper;
         _logger = logger ?? NullPersistenceLogger.Instance;
 
         // Cache column names (exclude Id for inserts, all except Id for updates)
@@ -56,11 +56,10 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
     /// <inheritdoc />
     public virtual async Task<IEnumerable<TEntity>> GetAllAsync(CancellationToken cancellationToken = default)
     {
-        using var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
         var sql = _queryBuilder.BuildSelectAll();
         _logger.LogQuery(sql);
         var cmd = new CommandDefinition(sql, cancellationToken: cancellationToken);
-        var result = await _dapper.QueryAsync<TEntity>(connection, cmd);
+        var result = await _dapper.QueryAsync<TEntity>(cmd);
         _logger.LogDebug($"GetAllAsync returned {result.Count()} rows");
         return result;
     }
@@ -68,13 +67,12 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
     /// <inheritdoc />
     public virtual async Task<TEntity> GetByIdAsync(TKey id, CancellationToken cancellationToken = default)
     {
-        using var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
         var sql = _queryBuilder.BuildSelectById();
         var parameters = new DynamicParameters();
         parameters.Add("Id", id);
         _logger.LogQuery(sql, new { Id = id });
         var cmd = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
-        var result = await _dapper.QuerySingleOrDefaultAsync<TEntity>(connection, cmd);
+        var result = await _dapper.QuerySingleOrDefaultAsync<TEntity>(cmd);
         _logger.LogDebug($"GetByIdAsync({id}) returned {(result != null ? "1 row" : "null")}");
         return result;
     }
@@ -87,7 +85,6 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
             throw new ArgumentNullException(nameof(entity));
         }
 
-        using var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
         var sql = _queryBuilder.BuildInsert(_insertColumns);
         var parameters = new DynamicParameters();
         foreach (var column in _insertColumns)
@@ -97,7 +94,7 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
         }
         _logger.LogQuery(sql, parameters);
         var cmd = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
-        var insertedId = await _dapper.ExecuteScalarAsync<TKey>(connection, cmd);
+        var insertedId = await _dapper.ExecuteScalarAsync<TKey>(cmd);
 
         if (insertedId == null || EqualityComparer<TKey>.Default.Equals(insertedId, default))
         {
@@ -118,7 +115,6 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
             throw new ArgumentNullException(nameof(entity));
         }
 
-        using var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
         var sql = _queryBuilder.BuildUpdate(_updateColumns);
         var parameters = new DynamicParameters();
         foreach (var column in _updateColumns)
@@ -129,7 +125,7 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
         parameters.Add("Id", entity.Id);
         _logger.LogQuery(sql, parameters);
         var cmd = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
-        var affectedRows = await _dapper.ExecuteAsync(connection, cmd);
+        var affectedRows = await _dapper.ExecuteAsync(cmd);
         _logger.LogDebug($"UpdateAsync affected {affectedRows} rows");
         return affectedRows > 0;
     }
@@ -137,13 +133,12 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
     /// <inheritdoc />
     public virtual async Task<bool> DeleteAsync(TKey id, CancellationToken cancellationToken = default)
     {
-        using var connection = await _connectionFactory.CreateConnectionAsync(cancellationToken);
         var sql = _queryBuilder.BuildDelete();
         var parameters = new DynamicParameters();
         parameters.Add("Id", id);
         _logger.LogQuery(sql, new { Id = id });
         var cmd = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
-        var affectedRows = await _dapper.ExecuteAsync(connection, cmd);
+        var affectedRows = await _dapper.ExecuteAsync(cmd);
         _logger.LogDebug($"DeleteAsync({id}) affected {affectedRows} rows");
         return affectedRows > 0;
     }

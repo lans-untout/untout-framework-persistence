@@ -1,6 +1,5 @@
 namespace Untout.Framework.Persistence.PostgreSql;
 
-using System.Data;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Dapper;
@@ -10,8 +9,8 @@ using Dapper;
 /// </summary>
 public interface IDapperExecutor
 {
-    Task<IEnumerable<T>> QueryAsync<T>(IDbConnection connection, CommandDefinition command);
-    Task<T> QuerySingleOrDefaultAsync<T>(IDbConnection connection, CommandDefinition command);
-    Task<int> ExecuteAsync(IDbConnection connection, CommandDefinition command);
-    Task<T> ExecuteScalarAsync<T>(IDbConnection connection, CommandDefinition command);
+    Task<IEnumerable<T>> QueryAsync<T>(CommandDefinition command);
+    Task<T> QuerySingleOrDefaultAsync<T>(CommandDefinition command);
+    Task<int> ExecuteAsync(CommandDefinition command);
+    Task<T> ExecuteScalarAsync<T>(CommandDefinition command);
 }

@@ -4,17 +4,41 @@ using System.Data;
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Dapper;
+using Untout.Framework.Persistence.Interfaces;
+using System;
 
 internal class DapperExecutor : IDapperExecutor
 {
-    public Task<IEnumerable<T>> QueryAsync<T>(IDbConnection connection, CommandDefinition command)
-        => connection.QueryAsync<T>(command);
+    private readonly IDbConnection connection;
+    private IDbConnectionFactory _connectionFactory;
 
-    public Task<T> QuerySingleOrDefaultAsync<T>(IDbConnection connection, CommandDefinition command)
-        => connection.QuerySingleOrDefaultAsync<T>(command);
-    public Task<int> ExecuteAsync(IDbConnection connection, CommandDefinition command)
-        => connection.ExecuteAsync(command);
+    public DapperExecutor(IDbConnectionFactory connectionFactory)
+    {
+        ArgumentNullException.ThrowIfNull(connectionFactory, nameof(connectionFactory));
+        _connectionFactory = connectionFactory;
+    }
 
-    public Task<T> ExecuteScalarAsync<T>(IDbConnection connection, CommandDefinition command)
-        => connection.ExecuteScalarAsync<T>(command);
+    public async Task<IEnumerable<T>> QueryAsync<T>(CommandDefinition command)
+    {
+        var connection = await _connectionFactory.CreateConnectionAsync(command.CancellationToken);
+        return await connection.QueryAsync<T>(command);
+    }
+
+    public async Task<T> QuerySingleOrDefaultAsync<T>(CommandDefinition command)
+    {
+        var connection = await _connectionFactory.CreateConnectionAsync(command.CancellationToken);
+        return await connection.QuerySingleOrDefaultAsync<T>(command);
+    }
+
+    public async Task<int> ExecuteAsync(CommandDefinition command)
+    {
+        var connection = await _connectionFactory.CreateConnectionAsync(command.CancellationToken);
+        return await connection.ExecuteAsync(command);
+    }
+
+    public async Task<T> ExecuteScalarAsync<T>(CommandDefinition command)
+    {
+        var connection = await _connectionFactory.CreateConnectionAsync(command.CancellationToken);
+        return await connection.ExecuteScalarAsync<T>(command);
+    }
 }
