@@ -76,6 +76,32 @@ public static class PersistenceServiceCollectionExtensions
     }
 
     /// <summary>
+    /// Registers a persistence logger of the specified type as a singleton service, replacing any existing logger registration.
+    /// </summary>
+    /// <typeparam name="T">The logger type implementing IPersistenceLogger.</typeparam>
+    /// <param name="services">The service collection to which the persistence logger will be added. This parameter cannot be null.</param>
+    /// <returns>The updated service collection with the registered persistence logger.</returns>
+    /// <remarks>
+    /// This overload is useful when you want the DI container to instantiate the logger.
+    /// If a persistence logger is already registered, it will be removed before the new logger is added.
+    /// </remarks>
+    public static IServiceCollection AddQueryLogger<T>(this IServiceCollection services)
+        where T : class, IPersistenceLogger
+    {
+        ArgumentNullException.ThrowIfNull(services);
+
+        // Remove existing logger registration if any
+        var existingDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(IPersistenceLogger));
+        if (existingDescriptor != null)
+        {
+            services.Remove(existingDescriptor);
+        }
+
+        services.AddSingleton<IPersistenceLogger, T>();
+        return services;
+    }
+
+    /// <summary>
     /// Adds PostgreSQL persistence infrastructure with custom logger.
     /// </summary>
     /// <param name="services">The service collection.</param>
