@@ -102,6 +102,8 @@ The framework provides:
 
 You can implement `IPersistenceLogger` to integrate with Serilog, NLog, or any logging framework.
 
+**Note:** `AddQueryLogger` and `AddPersistenceLogger` are functionally identical—both register an `IPersistenceLogger` and replace any existing logger registration. Use whichever name you prefer.
+
 See the `tests/` directory for more advanced usage and patterns.
 
 Lightweight persistence building blocks for .NET 8 (Dapper + PostgreSQL).

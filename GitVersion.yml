@@ -1,10 +1,11 @@
-mode: ContinuousDelivery
+mode: ContinuousDeployment
 next-version: 1.0.0
 commit-message-incrementing: Enabled
 branches:
   main:
     tag: ''
     increment: Patch
+    tracks-release-branches: false
   feature:
     tag: alpha
     increment: Minor
