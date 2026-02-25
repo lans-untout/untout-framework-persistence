@@ -47,6 +47,16 @@ public static class PersistenceServiceCollectionExtensions
         return services;
     }
 
+    /// <summary>
+    /// Registers the specified persistence logger as a singleton service in the provided service collection, replacing
+    /// any existing logger registration.
+    /// </summary>
+    /// <remarks>If a persistence logger is already registered in the service collection, it will be removed
+    /// before the new logger is added. This ensures that only the specified logger is used for persistence
+    /// operations.</remarks>
+    /// <param name="services">The service collection to which the persistence logger will be added. This parameter cannot be null.</param>
+    /// <param name="persistenceLogger">The persistence logger instance to register. This parameter cannot be null.</param>
+    /// <returns>The updated service collection with the registered persistence logger.</returns>
     public static IServiceCollection AddQueryLogger(
         this IServiceCollection services,
         IPersistenceLogger persistenceLogger)
