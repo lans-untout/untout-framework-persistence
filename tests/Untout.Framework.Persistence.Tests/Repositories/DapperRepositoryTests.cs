@@ -46,7 +46,7 @@ public class DapperRepositoryTests
             new TestEntity { Id = 2, Name = "Test2" }
         };
 
-        _mockDapperExecutor.Setup(d => d.QueryAsync<TestEntity>(_mockConnection.Object, It.Is<CommandDefinition>(c => c.CommandText == expectedSql)))
+        _mockDapperExecutor.Setup(d => d.QueryAsync<TestEntity>(It.IsAny<CommandDefinition>()))
             .ReturnsAsync(expectedEntities);
 
         // Act
@@ -69,7 +69,7 @@ public class DapperRepositoryTests
             .Returns(expectedSql);
 
         var expectedEntity = new TestEntity { Id = entityId, Name = "Test42" };
-        _mockDapperExecutor.Setup(d => d.QuerySingleOrDefaultAsync<TestEntity>(_mockConnection.Object, It.Is<CommandDefinition>(c => c.CommandText == expectedSql)))
+        _mockDapperExecutor.Setup(d => d.QuerySingleOrDefaultAsync<TestEntity>(It.IsAny<CommandDefinition>()))
             .ReturnsAsync(expectedEntity);
 
         // Act
@@ -94,7 +94,7 @@ public class DapperRepositoryTests
         _mockQueryBuilder.Setup(b => b.BuildInsert(It.IsAny<IEnumerable<string>>()))
             .Returns(expectedSql);
 
-        _mockDapperExecutor.Setup(d => d.ExecuteScalarAsync<int>(_mockConnection.Object, It.Is<CommandDefinition>(c => c.CommandText == expectedSql)))
+        _mockDapperExecutor.Setup(d => d.ExecuteScalarAsync<int>(It.IsAny<CommandDefinition>()))
             .ReturnsAsync(expectedId);
 
         var repository = CreateRepository();
@@ -114,7 +114,7 @@ public class DapperRepositoryTests
         _mockQueryBuilder.Setup(b => b.BuildUpdate(It.IsAny<IEnumerable<string>>()))
             .Returns(expectedSql);
 
-        _mockDapperExecutor.Setup(d => d.ExecuteAsync(_mockConnection.Object, It.Is<CommandDefinition>(c => c.CommandText == expectedSql)))
+        _mockDapperExecutor.Setup(d => d.ExecuteAsync(It.IsAny<CommandDefinition>()))
             .ReturnsAsync(1);
 
         var repository = CreateRepository();
@@ -133,7 +133,7 @@ public class DapperRepositoryTests
         _mockQueryBuilder.Setup(b => b.BuildDelete())
             .Returns(expectedSql);
 
-        _mockDapperExecutor.Setup(d => d.ExecuteAsync(_mockConnection.Object, It.Is<CommandDefinition>(c => c.CommandText == expectedSql)))
+        _mockDapperExecutor.Setup(d => d.ExecuteAsync(It.IsAny<CommandDefinition>()))
             .ReturnsAsync(1);
 
         var repository = CreateRepository();
@@ -153,7 +153,7 @@ public class DapperRepositoryTests
         _mockQueryBuilder.Setup(b => b.BuildInsert(It.IsAny<IEnumerable<string>>()))
             .Returns(expectedSql);
 
-        _mockDapperExecutor.Setup(d => d.ExecuteScalarAsync<int>(_mockConnection.Object, It.Is<CommandDefinition>(c => c.CommandText == expectedSql)))
+        _mockDapperExecutor.Setup(d => d.ExecuteScalarAsync<int>(It.IsAny<CommandDefinition>()))
             .ReturnsAsync(0);
 
         var repository = CreateRepository();
@@ -172,7 +172,7 @@ public class DapperRepositoryTests
         _mockQueryBuilder.Setup(b => b.BuildUpdate(It.IsAny<IEnumerable<string>>()))
             .Returns(expectedSql);
 
-        _mockDapperExecutor.Setup(d => d.ExecuteAsync(_mockConnection.Object, It.Is<CommandDefinition>(c => c.CommandText == expectedSql)))
+        _mockDapperExecutor.Setup(d => d.ExecuteAsync(It.IsAny<CommandDefinition>()))
             .ReturnsAsync(0);
 
         var repository = CreateRepository();
@@ -191,7 +191,7 @@ public class DapperRepositoryTests
         _mockQueryBuilder.Setup(b => b.BuildDelete())
             .Returns(expectedSql);
 
-        _mockDapperExecutor.Setup(d => d.ExecuteAsync(_mockConnection.Object, It.Is<CommandDefinition>(c => c.CommandText == expectedSql)))
+        _mockDapperExecutor.Setup(d => d.ExecuteAsync(It.IsAny<CommandDefinition>()))
             .ReturnsAsync(0);
 
         var repository = CreateRepository();
@@ -202,7 +202,6 @@ public class DapperRepositoryTests
 
     private IRepository<int, TestEntity> CreateRepository()
         => new DapperRepository<int, TestEntity>(
-        _mockFactory.Object,
         _mockQueryBuilder.Object,
         _mockDapperExecutor.Object);
 

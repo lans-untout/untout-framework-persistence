@@ -69,6 +69,14 @@ jobs:
           --output ./nupkgs \
           -p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersionV2 }}
 
+    - name: Pack DependencyInjection Library
+      run: |
+        dotnet pack src/Untout.Framework.Persistence.DependencyInjection/Untout.Framework.Persistence.DependencyInjection.csproj \
+          --configuration Release \
+          --no-build \
+          --output ./nupkgs \
+          -p:PackageVersion=${{ steps.gitversion.outputs.nuGetVersionV2 }}
+
     - name: Publish to GitHub Packages
       run: |
         dotnet nuget push ./nupkgs/*.nupkg \

@@ -11,6 +11,7 @@
 
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection" Version="8.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="Moq" Version="4.20.72" />
     <PackageReference Include="xunit" Version="2.5.3" />
@@ -24,6 +25,7 @@
   <ItemGroup>
     <ProjectReference Include="..\..\src\Untout.Framework.Persistence\Untout.Framework.Persistence.csproj" />
     <ProjectReference Include="..\..\src\Untout.Framework.Persistence.PostgreSql\Untout.Framework.Persistence.PostgreSql.csproj" />
+    <ProjectReference Include="..\..\src\Untout.Framework.Persistence.DependencyInjection\Untout.Framework.Persistence.DependencyInjection.csproj" />
   </ItemGroup>
 
 </Project>

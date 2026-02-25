@@ -1,9 +1,47 @@
 
 # Untout.Framework.Persistence
 
-## Usage Example
+## Quick Start (ASP.NET Core with Dependency Injection)
 
-Here's a minimal example of how to use the library in your .NET 8 project:
+```csharp
+// 1. Install packages
+// dotnet add package Untout.Framework.Persistence.DependencyInjection
+
+// 2. Define your entity
+public class Article : IEntity<int>
+{
+    public int Id { get; set; }
+    public string Title { get; set; } = string.Empty;
+    public string Content { get; set; } = string.Empty;
+}
+
+// 3. Register services in Program.cs
+builder.Services
+    .AddPostgreSqlPersistence(builder.Configuration.GetConnectionString("Default"))
+    .AddRepository<int, Article>()
+    .AddRepository<int, Tag>();
+
+// 4. Inject and use in your services/controllers
+public class ArticleService
+{
+    private readonly IRepository<int, Article> _repository;
+
+    public ArticleService(IRepository<int, Article> repository)
+    {
+        _repository = repository;
+    }
+
+    public async Task<Article> CreateArticle(string title, string content)
+    {
+        var article = new Article { Title = title, Content = content };
+        return await _repository.AddAsync(article);
+    }
+}
+```
+
+## Manual Setup (Without DI)
+
+If you're not using dependency injection:
 
 ```csharp
 // 1. Define your entity
@@ -14,20 +52,18 @@ public class Article : IEntity<int>
     public string Content { get; set; } = string.Empty;
 }
 
-// 2. Setup dependencies (PostgreSQL example)
-var connectionFactory = new NpgsqlConnectionFactory("Host=localhost;Database=mydb;Username=myuser;Password=mypass");
+// 2. Setup dependencies manually
+var connectionFactory = new NpgsqlConnectionFactory("Host=localhost;Database=mydb;Username=user;Password=pass");
 var nameAdapter = new SnakeCaseAdapter();
 var queryBuilder = new PostgreSqlQueryBuilder<int, Article>(nameAdapter);
+var executor = new DapperExecutor(connectionFactory);
 
-// 3. Use DapperRepository directly
-IRepository<int, Article> repository = new DapperRepository<int, Article>(
-    connectionFactory,
-    queryBuilder
-);
+// 3. Create repository
+var repository = new DapperRepository<int, Article>(queryBuilder, executor);
 
 // 4. Use the repository
-var newArticle = new Article { Title = "Hello", Content = "World" };
-await repository.AddAsync(newArticle);
+var article = new Article { Title = "Hello", Content = "World" };
+await repository.AddAsync(article);
 var allArticles = await repository.GetAllAsync();
 ```
 

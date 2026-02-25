@@ -80,10 +80,7 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
     /// <inheritdoc />
     public virtual async Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
-        if (entity == null)
-        {
-            throw new ArgumentNullException(nameof(entity));
-        }
+        ArgumentNullException.ThrowIfNull(entity, nameof(entity));
 
         var sql = _queryBuilder.BuildInsert(_insertColumns);
         var parameters = new DynamicParameters();
@@ -110,10 +107,7 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
     /// <inheritdoc />
     public virtual async Task<bool> UpdateAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
-        if (entity == null)
-        {
-            throw new ArgumentNullException(nameof(entity));
-        }
+        ArgumentNullException.ThrowIfNull(entity, nameof(entity));
 
         var sql = _queryBuilder.BuildUpdate(_updateColumns);
         var parameters = new DynamicParameters();
