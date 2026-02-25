@@ -1,6 +1,7 @@
 namespace Microsoft.Extensions.DependencyInjection;
 
 using System;
+using System.Linq;
 using Untout.Framework.Persistence;
 using Untout.Framework.Persistence.Interfaces;
 using Untout.Framework.Persistence.PostgreSql;
@@ -36,10 +37,31 @@ public static class PersistenceServiceCollectionExtensions
         
         // Name adapter (singleton - stateless)
         services.AddSingleton<IDbNameAdapter, SnakeCaseAdapter>();
-        
-        // Logger (singleton - default null logger)
-        services.AddSingleton<IPersistenceLogger, NullPersistenceLogger>();
 
+        var existingDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(IPersistenceLogger));
+        if (existingDescriptor == null)
+        {
+            services.AddSingleton<IPersistenceLogger>(NullPersistenceLogger.Instance);
+        }
+
+        return services;
+    }
+
+    public static IServiceCollection AddQueryLogger(
+        this IServiceCollection services,
+        IPersistenceLogger persistenceLogger)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(persistenceLogger);
+
+        // Remove existing logger registration if any
+        var existingDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(IPersistenceLogger));
+        if (existingDescriptor != null)
+        {
+            services.Remove(existingDescriptor);
+        }
+
+        services.AddSingleton(persistenceLogger);
         return services;
     }
 
@@ -94,6 +116,33 @@ public static class PersistenceServiceCollectionExtensions
                 sp.GetRequiredService<ISqlQueryBuilder<TKey, TEntity>>(),
                 sp.GetRequiredService<IDapperExecutor>(),
                 sp.GetRequiredService<IPersistenceLogger>()));
+
+        return services;
+    }
+
+    /// <summary>
+    /// Registers a custom logger instance for persistence operations.
+    /// Replaces the default NullPersistenceLogger.
+    /// </summary>
+    /// <param name="services">The service collection.</param>
+    /// <param name="logger">The logger instance to register.</param>
+    /// <returns>The service collection for method chaining.</returns>
+    public static IServiceCollection AddPersistenceLogger(
+        this IServiceCollection services,
+        IPersistenceLogger logger)
+    {
+        ArgumentNullException.ThrowIfNull(services);
+        ArgumentNullException.ThrowIfNull(logger);
+
+        // Remove existing logger registration if any
+        var existingDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(IPersistenceLogger));
+        if (existingDescriptor != null)
+        {
+            services.Remove(existingDescriptor);
+        }
+
+        // Register new logger as singleton
+        services.AddSingleton(logger);
 
         return services;
     }

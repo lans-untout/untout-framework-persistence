@@ -67,22 +67,32 @@ await repository.AddAsync(article);
 var allArticles = await repository.GetAllAsync();
 ```
 
-### With Logging
+### With Logging (DI)
 
-To enable SQL query logging during development:
+Enable SQL query logging in development:
 
 ```csharp
-// Use ConsolePersistenceLogger for development/debugging
+// Option 1: Configure during setup
+builder.Services.AddPostgreSqlPersistence(
+    builder.Configuration.GetConnectionString("Default"),
+    logger: ConsolePersistenceLogger.Instance);
+
+// Option 2: Add logger separately (useful for environment-specific config)
+builder.Services
+    .AddPostgreSqlPersistence(builder.Configuration.GetConnectionString("Default"))
+    .AddPersistenceLogger(
+        builder.Environment.IsDevelopment() 
+            ? ConsolePersistenceLogger.Instance 
+            : NullPersistenceLogger.Instance)
+    .AddRepository<int, Article>();
+```
+
+### With Logging (Manual Setup)
+
+```csharp
 var logger = ConsolePersistenceLogger.Instance;
-
-IRepository<int, Article> repository = new DapperRepository<int, Article>(
-    connectionFactory,
-    queryBuilder,
-    dapper: null,  // Use default DapperExecutor
-    logger: logger // Enable console logging
-);
-
-// In production, use NullPersistenceLogger (default) or integrate Serilog/NLog
+var executor = new DapperExecutor(connectionFactory);
+var repository = new DapperRepository<int, Article>(queryBuilder, executor, logger);
 ```
 
 The framework provides:

@@ -47,7 +47,7 @@ public class PersistenceServiceCollectionExtensionsTests
         var services = new ServiceCollection();
 
         // Act & Assert
-        Assert.Throws<ArgumentException>(() => 
+        Assert.Throws<ArgumentNullException>(() => 
             services.AddPostgreSqlPersistence(null));
     }
 
@@ -216,6 +216,86 @@ public class PersistenceServiceCollectionExtensionsTests
         // Assert
         Assert.Same(repo1, repo2); // Same scope = same instance
         Assert.NotSame(repo1, repo3); // Different scope = different instance
+    }
+
+    [Fact]
+    public void AddPersistenceLogger_RegistersCustomLogger()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var connectionString = "Host=localhost;Database=test";
+        var logger = ConsolePersistenceLogger.Instance;
+
+        // Act
+        services.AddPostgreSqlPersistence(connectionString);
+        services.AddPersistenceLogger(logger);
+        var provider = services.BuildServiceProvider();
+
+        // Assert
+        var registeredLogger = provider.GetService<IPersistenceLogger>();
+        Assert.Same(logger, registeredLogger);
+    }
+
+    [Fact]
+    public void AddPersistenceLogger_ReplacesDefaultLogger()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var connectionString = "Host=localhost;Database=test";
+
+        // Act
+        services.AddPostgreSqlPersistence(connectionString)
+            .AddQueryLogger(NullPersistenceLogger.Instance);
+        var providerBefore = services.BuildServiceProvider();
+        var loggerBefore = providerBefore.GetService<IPersistenceLogger>();
+
+        services.AddPersistenceLogger(ConsolePersistenceLogger.Instance); // Replaces with ConsoleLogger
+        var providerAfter = services.BuildServiceProvider();
+        var loggerAfter = providerAfter.GetService<IPersistenceLogger>();
+
+        // Assert
+        Assert.IsType<NullPersistenceLogger>(loggerBefore);
+        Assert.Same(ConsolePersistenceLogger.Instance, loggerAfter);
+    }
+
+    [Fact]
+    public void AddPersistenceLogger_WithNullServices_ThrowsArgumentNullException()
+    {
+        // Arrange
+        IServiceCollection services = null;
+        var logger = ConsolePersistenceLogger.Instance;
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => 
+            services.AddPersistenceLogger(logger));
+    }
+
+    [Fact]
+    public void AddPersistenceLogger_WithNullLogger_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => 
+            services.AddPersistenceLogger(null));
+    }
+
+    [Fact]
+    public void AddPersistenceLogger_SupportsMethodChaining()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var connectionString = "Host=localhost;Database=test";
+
+        // Act
+        var result = services
+            .AddPostgreSqlPersistence(connectionString)
+            .AddPersistenceLogger(ConsolePersistenceLogger.Instance)
+            .AddRepository<int, TestEntity>();
+
+        // Assert
+        Assert.Same(services, result);
     }
 
     public class TestEntity : IEntity<int>
