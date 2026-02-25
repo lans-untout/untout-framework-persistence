@@ -1,14 +1,19 @@
-mode: ContinuousDelivery
+mode: Mainline
 next-version: 1.0.0
 commit-message-incrementing: Enabled
 branches:
   main:
+    regex: ^main$
+    mode: ContinuousDelivery
     tag: ''
     increment: Patch
+    is-mainline: true
   feature:
+    regex: ^features?[/-]
     tag: alpha
     increment: Minor
   develop:
+    regex: ^develop$
     tag: beta
     increment: Minor
 ignore:
