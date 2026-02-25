@@ -1,7 +1,7 @@
 
 # Untout.Framework.Persistence
 
-## Quick Start (ASP.NET Core with Dependency Injection)
+## Quick Start
 
 ```csharp
 // 1. Install packages
