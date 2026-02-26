@@ -1,18 +1,6 @@
-mode: ContinuousDelivery
+mode: ContinuousDeployment
+next-version: 1.1.0
+branches: {}
 commit-message-incrementing: Enabled
-branches:
-  main:
-    regex: ^main$
-    mode: ContinuousDelivery
-    label: ''
-    is-main-branch: true
-  feature:
-    regex: ^features?[/-]
-    label: alpha
-    increment: Minor
-  develop:
-    regex: ^develop$
-    label: beta
-    increment: Minor
 ignore:
   sha: []
