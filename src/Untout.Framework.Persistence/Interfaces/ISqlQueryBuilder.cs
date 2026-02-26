@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using Dapper;
 
 namespace Untout.Framework.Persistence.Interfaces;
 
@@ -20,26 +20,25 @@ public interface ISqlQueryBuilder<TKey, TEntity> where TEntity : class, IEntity<
     /// Builds a SELECT query to retrieve an entity by ID
     /// </summary>
     /// <returns>SQL query string with @Id parameter</returns>
-    string BuildSelectById();
+    (string Sql, DynamicParameters Parameters) BuildSelectById(TKey id);
 
     /// <summary>
     /// Builds an INSERT query with database-specific syntax for returning the inserted ID
     /// PostgreSQL uses RETURNING clause, SQL Server uses OUTPUT clause
     /// </summary>
-    /// <param name="columns">Column names to insert (excludes Id for auto-increment)</param>
     /// <returns>SQL query string with parameters for each column</returns>
-    string BuildInsert(IEnumerable<string> columns);
+    (string Sql, DynamicParameters Parameters) BuildInsert(TEntity entity);
 
     /// <summary>
     /// Builds an UPDATE query by ID
     /// </summary>
     /// <param name="columns">Column names to update (excludes Id)</param>
     /// <returns>SQL query string with @Id parameter and parameters for each column</returns>
-    string BuildUpdate(IEnumerable<string> columns);
+    (string Sql, DynamicParameters Parameters) BuildUpdate(TEntity entity);
 
     /// <summary>
     /// Builds a DELETE query by ID
     /// </summary>
     /// <returns>SQL query string with @Id parameter</returns>
-    string BuildDelete();
+    (string Sql, DynamicParameters Parameters) BuildDelete(TKey id);
 }

@@ -1,9 +1,9 @@
-namespace Untout.Framework.Persistence.PostgreSql;
 
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Dapper;
 
+namespace Untout.Framework.Persistence.PostgreSql;
 /// <summary>
 /// Thin abstraction over Dapper static extension methods to make them mockable in tests
 /// </summary>

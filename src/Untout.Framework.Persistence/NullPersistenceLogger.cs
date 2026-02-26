@@ -1,8 +1,8 @@
-namespace Untout.Framework.Persistence;
 
 using System;
 using Untout.Framework.Persistence.Interfaces;
 
+namespace Untout.Framework.Persistence;
 /// <summary>
 /// Null implementation of IPersistenceLogger that does nothing.
 /// Use this when logging is not needed (default behavior).

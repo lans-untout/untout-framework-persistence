@@ -1,4 +1,3 @@
-namespace Untout.Framework.Persistence.PostgreSql;
 
 using System;
 using System.Collections.Generic;
@@ -11,6 +10,7 @@ using Dapper;
 using Untout.Framework.Persistence;
 using Untout.Framework.Persistence.Interfaces;
 
+namespace Untout.Framework.Persistence.PostgreSql;
 /// <summary>
 /// Base repository implementation using Dapper and PostgreSQL query builders
 /// Reduces boilerplate code by 30-40% compared to manual SQL in each repository
@@ -23,8 +23,6 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
     private readonly ISqlQueryBuilder<TKey, TEntity> _queryBuilder;
     private readonly IDapperExecutor _dapper;
     private readonly IPersistenceLogger _logger;
-    private readonly IEnumerable<string> _insertColumns;
-    private readonly IEnumerable<string> _updateColumns;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="DapperRepository{TKey, TEntity}"/> class.
@@ -44,13 +42,6 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
         _queryBuilder = queryBuilder;
         _dapper = dapper;
         _logger = logger ?? NullPersistenceLogger.Instance;
-
-        // Cache column names (exclude Id for inserts, all except Id for updates)
-        var properties = typeof(TEntity).GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(p => p.CanRead && p.CanWrite && p.Name != nameof(IEntity<TKey>.Id));
-
-        _insertColumns = properties.Select(p => p.Name).ToList();
-        _updateColumns = _insertColumns; // Same columns for update
     }
 
     /// <inheritdoc />
@@ -67,9 +58,7 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
     /// <inheritdoc />
     public virtual async Task<TEntity> GetByIdAsync(TKey id, CancellationToken cancellationToken = default)
     {
-        var sql = _queryBuilder.BuildSelectById();
-        var parameters = new DynamicParameters();
-        parameters.Add("Id", id);
+        var (sql, parameters) = _queryBuilder.BuildSelectById(id);
         _logger.LogQuery(sql, new { Id = id });
         var cmd = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
         var result = await _dapper.QuerySingleOrDefaultAsync<TEntity>(cmd);
@@ -82,13 +71,7 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
     {
         ArgumentNullException.ThrowIfNull(entity, nameof(entity));
 
-        var sql = _queryBuilder.BuildInsert(_insertColumns);
-        var parameters = new DynamicParameters();
-        foreach (var column in _insertColumns)
-        {
-            var value = typeof(TEntity).GetProperty(column)?.GetValue(entity);
-            parameters.Add(column, value);
-        }
+        var (sql, parameters) = _queryBuilder.BuildInsert(entity);
         _logger.LogQuery(sql, parameters);
         var cmd = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
         var insertedId = await _dapper.ExecuteScalarAsync<TKey>(cmd);
@@ -109,14 +92,7 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
     {
         ArgumentNullException.ThrowIfNull(entity, nameof(entity));
 
-        var sql = _queryBuilder.BuildUpdate(_updateColumns);
-        var parameters = new DynamicParameters();
-        foreach (var column in _updateColumns)
-        {
-            var value = typeof(TEntity).GetProperty(column)?.GetValue(entity);
-            parameters.Add(column, value);
-        }
-        parameters.Add("Id", entity.Id);
+        var (sql, parameters) = _queryBuilder.BuildUpdate(entity);
         _logger.LogQuery(sql, parameters);
         var cmd = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
         var affectedRows = await _dapper.ExecuteAsync(cmd);
@@ -127,9 +103,7 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
     /// <inheritdoc />
     public virtual async Task<bool> DeleteAsync(TKey id, CancellationToken cancellationToken = default)
     {
-        var sql = _queryBuilder.BuildDelete();
-        var parameters = new DynamicParameters();
-        parameters.Add("Id", id);
+        var (sql, parameters) = _queryBuilder.BuildDelete(id);
         _logger.LogQuery(sql, new { Id = id });
         var cmd = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
         var affectedRows = await _dapper.ExecuteAsync(cmd);

@@ -1,4 +1,4 @@
-namespace Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 
 using System;
 using System.Linq;
@@ -7,6 +7,7 @@ using Untout.Framework.Persistence.Interfaces;
 using Untout.Framework.Persistence.PostgreSql;
 using Untout.Framework.Persistence.PostgreSql.Adapters;
 
+namespace Untout.Framework.Persistence.DependencyInjection;
 /// <summary>
 /// Extension methods for registering Untout.Framework.Persistence services in dependency injection.
 /// </summary>

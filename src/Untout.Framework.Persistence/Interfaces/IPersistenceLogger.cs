@@ -1,7 +1,7 @@
-namespace Untout.Framework.Persistence.Interfaces;
 
 using System;
 
+namespace Untout.Framework.Persistence.Interfaces;
 /// <summary>
 /// Logging abstraction for persistence operations.
 /// Can be replaced with Serilog, NLog, or other logging frameworks in consuming applications.

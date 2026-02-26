@@ -1,6 +1,8 @@
+using Dapper;
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 using Untout.Framework.Persistence.Interfaces;
 
 namespace Untout.Framework.Persistence.PostgreSql;
@@ -16,6 +18,9 @@ public class PostgreSqlQueryBuilder<TKey, TEntity> : ISqlQueryBuilder<TKey, TEnt
 {
     private readonly IDbNameAdapter _nameAdapter;
     private readonly string _tableName;
+    private readonly string _idColumn;
+    private readonly Dictionary<string, PropertyInfo> _properties;
+    private readonly Dictionary<string, string> _columnNames;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="PostgreSqlQueryBuilder{TKey, TEntity}"/> class
@@ -25,56 +30,73 @@ public class PostgreSqlQueryBuilder<TKey, TEntity> : ISqlQueryBuilder<TKey, TEnt
     {
         _nameAdapter = nameAdapter ?? throw new ArgumentNullException(nameof(nameAdapter));
         _tableName = nameAdapter.GetTableName<TEntity>();
+        _idColumn = nameAdapter.GetColumnName<TEntity>(nameof(IEntity<TKey>.Id));
+
+        // Cache properties (exclude Id for inserts/updates)
+        var properties = typeof(TEntity).GetProperties(BindingFlags.Public | BindingFlags.Instance)
+            .Where(p => p.CanRead && p.CanWrite && p.Name != nameof(IEntity<TKey>.Id))
+            .ToList();
+
+        // Dual cache: PropertyInfo for fast value access + column names for SQL generation
+        _properties = properties.ToDictionary(p => p.Name, p => p);
+        _columnNames = properties.ToDictionary(p => p.Name, p => nameAdapter.GetColumnName<TEntity>(p.Name));
     }
 
     /// <inheritdoc />
     public string BuildSelectAll()
     {
-        return $"SELECT * FROM {_tableName}";
+        var colsAndAs = string.Join(", ", _columnNames.Select(kv => $"{kv.Value} AS {kv.Key}"));
+        return $"SELECT {_idColumn} AS Id, {colsAndAs} FROM {_tableName}";
     }
 
     /// <inheritdoc />
-    public string BuildSelectById()
+    public (string Sql, DynamicParameters Parameters) BuildSelectById(TKey id)
     {
-        var idColumn = _nameAdapter.GetColumnName<TEntity>(nameof(IEntity<TKey>.Id));
-        return $"SELECT * FROM {_tableName} WHERE {idColumn} = @Id";
+        var parameters = new DynamicParameters();
+        parameters.Add("Id", id);
+        var colsAndAs = string.Join(", ", _columnNames.Select(kv => $"{kv.Value} AS {kv.Key}"));
+        return ($"SELECT {_idColumn} AS Id, {colsAndAs} FROM {_tableName} WHERE {_idColumn} = @Id", parameters);
     }
 
     /// <inheritdoc />
-    public string BuildInsert(IEnumerable<string> columns)
+    public (string Sql, DynamicParameters Parameters) BuildInsert(TEntity entity)
     {
-        if (columns == null || !columns.Any())
+        ArgumentNullException.ThrowIfNull(entity, nameof(entity));
+        var parameters = new DynamicParameters();
+        foreach (var kv in _properties)
         {
-            throw new ArgumentException("Columns cannot be null or empty", nameof(columns));
+            var value = kv.Value.GetValue(entity);
+            parameters.Add(kv.Key, value);
         }
 
-        var columnList = string.Join(", ", columns.Select(c => _nameAdapter.GetColumnName<TEntity>(c)));
-        var parameterList = string.Join(", ", columns.Select(c => $"@{c}"));
-        var idColumn = _nameAdapter.GetColumnName<TEntity>(nameof(IEntity<TKey>.Id));
+        var columnList = string.Join(", ", _columnNames.Values);
+        var parameterList = string.Join(", ", _columnNames.Keys.Select(c => $"@{c}"));
 
-        // PostgreSQL RETURNING clause returns the inserted ID
-        return $"INSERT INTO {_tableName} ({columnList}) VALUES ({parameterList}) RETURNING {idColumn}";
+        return ($"INSERT INTO {_tableName} ({columnList}) VALUES ({parameterList}) RETURNING {_idColumn}", parameters);
     }
 
     /// <inheritdoc />
-    public string BuildUpdate(IEnumerable<string> columns)
+    public (string Sql, DynamicParameters Parameters) BuildUpdate(TEntity entity)
     {
-        if (columns == null || !columns.Any())
+        ArgumentNullException.ThrowIfNull(entity, nameof(entity));
+        var parameters = new DynamicParameters();
+        foreach (var kv in _properties)
         {
-            throw new ArgumentException("Columns cannot be null or empty", nameof(columns));
+            var value = kv.Value.GetValue(entity);
+            parameters.Add(kv.Key, value);
         }
+        parameters.Add("Id", entity.Id);
 
-        var setClause = string.Join(", ", columns.Select(c =>
-            $"{_nameAdapter.GetColumnName<TEntity>(c)} = @{c}"));
-        var idColumn = _nameAdapter.GetColumnName<TEntity>(nameof(IEntity<TKey>.Id));
+        var setClause = string.Join(", ", _columnNames.Select(kv => $"{kv.Value} = @{kv.Key}"));
 
-        return $"UPDATE {_tableName} SET {setClause} WHERE {idColumn} = @Id";
+        return ($"UPDATE {_tableName} SET {setClause} WHERE {_idColumn} = @Id", parameters);
     }
 
     /// <inheritdoc />
-    public string BuildDelete()
+    public (string Sql, DynamicParameters Parameters) BuildDelete(TKey id)
     {
-        var idColumn = _nameAdapter.GetColumnName<TEntity>(nameof(IEntity<TKey>.Id));
-        return $"DELETE FROM {_tableName} WHERE {idColumn} = @Id";
+        var parameters = new DynamicParameters();
+        parameters.Add("Id", id);
+        return ($"DELETE FROM {_tableName} WHERE {_idColumn} = @Id", parameters);
     }
 }

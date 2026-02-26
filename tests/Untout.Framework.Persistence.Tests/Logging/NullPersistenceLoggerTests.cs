@@ -1,10 +1,10 @@
-namespace Untout.Framework.Persistence.Tests.Logging;
 
 using System;
 using Xunit;
 using Untout.Framework.Persistence;
 using Untout.Framework.Persistence.Interfaces;
 
+namespace Untout.Framework.Persistence.Tests.Logging;
 public class NullPersistenceLoggerTests
 {
     private readonly IPersistenceLogger _logger;

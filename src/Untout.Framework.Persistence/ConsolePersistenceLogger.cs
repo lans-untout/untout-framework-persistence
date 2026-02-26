@@ -1,8 +1,8 @@
-namespace Untout.Framework.Persistence;
 
 using System;
 using Untout.Framework.Persistence.Interfaces;
 
+namespace Untout.Framework.Persistence;
 /// <summary>
 /// Console-based implementation of IPersistenceLogger for development and debugging.
 /// Logs messages to the console with timestamps and log levels.

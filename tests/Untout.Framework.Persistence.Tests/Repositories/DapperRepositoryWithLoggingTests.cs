@@ -1,4 +1,3 @@
-namespace Untout.Framework.Persistence.Tests.Repositories;
 
 using Moq;
 using System;
@@ -13,6 +12,7 @@ using Untout.Framework.Persistence.Interfaces;
 using Untout.Framework.Persistence.PostgreSql;
 using Xunit;
 
+namespace Untout.Framework.Persistence.Tests.Repositories;
 public class DapperRepositoryWithLoggingTests
 {
     private readonly Mock<IDbConnection> _mockConnection;
@@ -66,8 +66,8 @@ public class DapperRepositoryWithLoggingTests
         // Arrange
         var entityId = 42;
         var expectedSql = "SELECT * FROM test_entities WHERE id = @Id";
-        _mockQueryBuilder.Setup(b => b.BuildSelectById())
-            .Returns(expectedSql);
+        _mockQueryBuilder.Setup(b => b.BuildSelectById(entityId))
+            .Returns((expectedSql, new DynamicParameters(new { Id = entityId })));
 
         var expectedEntity = new TestEntity { Id = entityId, Name = "Test42" };
 
@@ -90,8 +90,8 @@ public class DapperRepositoryWithLoggingTests
         // Arrange
         var entityId = 999;
         var expectedSql = "SELECT * FROM test_entities WHERE id = @Id";
-        _mockQueryBuilder.Setup(b => b.BuildSelectById())
-            .Returns(expectedSql);
+        _mockQueryBuilder.Setup(b => b.BuildSelectById(entityId))
+            .Returns((expectedSql, new DynamicParameters(new { Id = entityId })));
 
         _mockDapperExecutor.Setup(d => d.QuerySingleOrDefaultAsync<TestEntity>(It.IsAny<CommandDefinition>()))
             .ReturnsAsync((TestEntity)null);
@@ -113,8 +113,8 @@ public class DapperRepositoryWithLoggingTests
         var expectedId = 123;
         var expectedSql = "INSERT INTO test_entities (name) VALUES (@Name) RETURNING id";
 
-        _mockQueryBuilder.Setup(b => b.BuildInsert(It.IsAny<IEnumerable<string>>()))
-            .Returns(expectedSql);
+        _mockQueryBuilder.Setup(b => b.BuildInsert(It.IsAny<TestEntity>()))
+            .Returns((expectedSql, new DynamicParameters(new { entity.Name })));
 
         _mockDapperExecutor.Setup(d => d.ExecuteScalarAsync<int>(It.IsAny<CommandDefinition>()))
             .ReturnsAsync(expectedId);
@@ -136,8 +136,8 @@ public class DapperRepositoryWithLoggingTests
         var entity = new TestEntity { Id = 0, Name = "FailEntity" };
         var expectedSql = "INSERT INTO test_entities (name) VALUES (@Name) RETURNING id";
 
-        _mockQueryBuilder.Setup(b => b.BuildInsert(It.IsAny<IEnumerable<string>>()))
-            .Returns(expectedSql);
+        _mockQueryBuilder.Setup(b => b.BuildInsert(It.IsAny<TestEntity>()))
+            .Returns((expectedSql, new DynamicParameters(new { entity.Name })));
 
         _mockDapperExecutor.Setup(d => d.ExecuteScalarAsync<int>(It.IsAny<CommandDefinition>()))
             .ReturnsAsync(default(int));
@@ -158,8 +158,8 @@ public class DapperRepositoryWithLoggingTests
         var entity = new TestEntity { Id = 5, Name = "UpdatedEntity" };
         var expectedSql = "UPDATE test_entities SET name = @Name WHERE id = @Id";
 
-        _mockQueryBuilder.Setup(b => b.BuildUpdate(It.IsAny<IEnumerable<string>>()))
-            .Returns(expectedSql);
+        _mockQueryBuilder.Setup(b => b.BuildUpdate(It.IsAny<TestEntity>()))
+            .Returns((expectedSql, new DynamicParameters(new { entity.Id, entity.Name })));
 
         _mockDapperExecutor.Setup(d => d.ExecuteAsync(It.IsAny<CommandDefinition>()))
             .ReturnsAsync(1);
@@ -181,8 +181,8 @@ public class DapperRepositoryWithLoggingTests
         var entityId = 77;
         var expectedSql = "DELETE FROM test_entities WHERE id = @Id";
 
-        _mockQueryBuilder.Setup(b => b.BuildDelete())
-            .Returns(expectedSql);
+        _mockQueryBuilder.Setup(b => b.BuildDelete(entityId))
+            .Returns((expectedSql, new DynamicParameters(new { Id = entityId })));
 
         _mockDapperExecutor.Setup(d => d.ExecuteAsync(It.IsAny<CommandDefinition>()))
             .ReturnsAsync(1);

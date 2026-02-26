@@ -1,13 +1,14 @@
-namespace Untout.Framework.Persistence.Tests.DependencyInjection;
 
 using System;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Untout.Framework.Persistence;
+using Untout.Framework.Persistence.DependencyInjection;
 using Untout.Framework.Persistence.Interfaces;
 using Untout.Framework.Persistence.PostgreSql;
 using Xunit;
 
+namespace Untout.Framework.Persistence.Tests.DependencyInjection;
 public class PersistenceServiceCollectionExtensionsTests
 {
     [Fact]
@@ -296,6 +297,228 @@ public class PersistenceServiceCollectionExtensionsTests
 
         // Assert
         Assert.Same(services, result);
+    }
+
+    [Fact]
+    public void AddQueryLogger_WithInstance_RegistersCustomLogger()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var connectionString = "Host=localhost;Database=test";
+        var logger = ConsolePersistenceLogger.Instance;
+
+        // Act
+        services.AddPostgreSqlPersistence(connectionString);
+        services.AddQueryLogger(logger);
+        var provider = services.BuildServiceProvider();
+
+        // Assert
+        var registeredLogger = provider.GetService<IPersistenceLogger>();
+        Assert.Same(logger, registeredLogger);
+    }
+
+    [Fact]
+    public void AddQueryLogger_WithInstance_ReplacesExistingLogger()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var connectionString = "Host=localhost;Database=test";
+
+        // Act
+        services.AddPostgreSqlPersistence(connectionString); // Registers NullLogger
+        services.AddQueryLogger(ConsolePersistenceLogger.Instance); // Replaces with ConsoleLogger
+        var provider = services.BuildServiceProvider();
+
+        // Assert
+        var registeredLogger = provider.GetService<IPersistenceLogger>();
+        Assert.Same(ConsolePersistenceLogger.Instance, registeredLogger);
+    }
+
+    [Fact]
+    public void AddQueryLogger_WithInstance_SupportsMethodChaining()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var connectionString = "Host=localhost;Database=test";
+
+        // Act
+        var result = services
+            .AddPostgreSqlPersistence(connectionString)
+            .AddQueryLogger(ConsolePersistenceLogger.Instance)
+            .AddRepository<int, TestEntity>();
+
+        // Assert
+        Assert.Same(services, result);
+    }
+
+    [Fact]
+    public void AddQueryLogger_WithGenericType_RegistersLoggerType()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var connectionString = "Host=localhost;Database=test";
+
+        // Act
+        services.AddPostgreSqlPersistence(connectionString);
+        services.AddQueryLogger<TestCustomLogger>();
+        var provider = services.BuildServiceProvider();
+
+        // Assert
+        var registeredLogger = provider.GetService<IPersistenceLogger>();
+        Assert.NotNull(registeredLogger);
+        Assert.IsType<TestCustomLogger>(registeredLogger);
+    }
+
+    [Fact]
+    public void AddQueryLogger_WithGenericType_ReplacesDefaultLogger()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var connectionString = "Host=localhost;Database=test";
+
+        // Act
+        services.AddPostgreSqlPersistence(connectionString); // Registers NullLogger
+        services.AddQueryLogger<TestCustomLogger>(); // Replaces with TestCustomLogger
+        var provider = services.BuildServiceProvider();
+
+        // Assert
+        var registeredLogger = provider.GetService<IPersistenceLogger>();
+        Assert.IsType<TestCustomLogger>(registeredLogger);
+    }
+
+    [Fact]
+    public void AddQueryLogger_WithGenericType_ReplacesExistingInstanceLogger()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var connectionString = "Host=localhost;Database=test";
+
+        // Act
+        services.AddPostgreSqlPersistence(connectionString);
+        services.AddQueryLogger(ConsolePersistenceLogger.Instance); // Register instance
+        services.AddQueryLogger<TestCustomLogger>(); // Replace with type
+        var provider = services.BuildServiceProvider();
+
+        // Assert
+        var registeredLogger = provider.GetService<IPersistenceLogger>();
+        Assert.IsType<TestCustomLogger>(registeredLogger);
+        Assert.NotSame(ConsolePersistenceLogger.Instance, registeredLogger);
+    }
+
+    [Fact]
+    public void AddQueryLogger_WithGenericType_CreatesNewInstanceEachSingleton()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var connectionString = "Host=localhost;Database=test";
+
+        // Act
+        services.AddPostgreSqlPersistence(connectionString);
+        services.AddQueryLogger<TestCustomLogger>();
+        var provider = services.BuildServiceProvider();
+
+        // Assert - Singleton should return same instance
+        var logger1 = provider.GetService<IPersistenceLogger>();
+        var logger2 = provider.GetService<IPersistenceLogger>();
+        Assert.Same(logger1, logger2);
+    }
+
+    [Fact]
+    public void AddQueryLogger_WithGenericType_SupportsMethodChaining()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var connectionString = "Host=localhost;Database=test";
+
+        // Act
+        var result = services
+            .AddPostgreSqlPersistence(connectionString)
+            .AddQueryLogger<TestCustomLogger>()
+            .AddRepository<int, TestEntity>();
+
+        // Assert
+        Assert.Same(services, result);
+    }
+
+    [Fact]
+    public void AddQueryLogger_WithGenericType_WithNullServices_ThrowsArgumentNullException()
+    {
+        // Arrange
+        IServiceCollection services = null;
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => 
+            services.AddQueryLogger<TestCustomLogger>());
+    }
+
+    [Fact]
+    public void AddQueryLogger_WithInstance_WithNullServices_ThrowsArgumentNullException()
+    {
+        // Arrange
+        IServiceCollection services = null;
+        var logger = ConsolePersistenceLogger.Instance;
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => 
+            services.AddQueryLogger(logger));
+    }
+
+    [Fact]
+    public void AddQueryLogger_WithInstance_WithNullLogger_ThrowsArgumentNullException()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => 
+            services.AddQueryLogger(null));
+    }
+
+    [Fact]
+    public void AddQueryLogger_WithGenericType_RegistersAsSingleton()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var connectionString = "Host=localhost;Database=test";
+
+        // Act
+        services.AddPostgreSqlPersistence(connectionString);
+        services.AddQueryLogger<TestCustomLogger>();
+
+        // Assert
+        var loggerDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(IPersistenceLogger));
+        Assert.Equal(ServiceLifetime.Singleton, loggerDescriptor?.Lifetime);
+    }
+
+    [Fact]
+    public void AddQueryLogger_WithGenericType_LoggerIsUsedByRepository()
+    {
+        // Arrange
+        var services = new ServiceCollection();
+        var connectionString = "Host=localhost;Database=test";
+
+        // Act
+        services.AddPostgreSqlPersistence(connectionString);
+        services.AddQueryLogger<TestCustomLogger>();
+        services.AddRepository<int, TestEntity>();
+        var provider = services.BuildServiceProvider();
+
+        using var scope = provider.CreateScope();
+        var repository = scope.ServiceProvider.GetRequiredService<IRepository<int, TestEntity>>();
+        var logger = scope.ServiceProvider.GetRequiredService<IPersistenceLogger>();
+
+        // Assert
+        Assert.IsType<TestCustomLogger>(logger);
+        Assert.NotNull(repository);
+    }
+
+    public class TestCustomLogger : IPersistenceLogger
+    {
+        public void LogQuery(string sql, object parameters = null) { }
+        public void LogDebug(string message) { }
+        public void LogInformation(string message) { }
+        public void LogWarning(string message) { }
+        public void LogError(string message, Exception exception) { }
     }
 
     public class TestEntity : IEntity<int>

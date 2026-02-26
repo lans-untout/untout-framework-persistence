@@ -1,4 +1,3 @@
-namespace Untout.Framework.Persistence.PostgreSql.Adapters;
 
 using System;
 using System.ComponentModel.DataAnnotations.Schema;
@@ -6,6 +5,7 @@ using System.Linq;
 using System.Text.RegularExpressions;
 using Untout.Framework.Persistence.Interfaces;
 
+namespace Untout.Framework.Persistence.PostgreSql.Adapters;
 /// <summary>
 /// Convention-based name adapter that converts PascalCase to snake_case
 /// Used for PostgreSQL naming conventions (e.g., ArticleId -> article_id)
