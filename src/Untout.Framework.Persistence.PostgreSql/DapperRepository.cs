@@ -74,7 +74,7 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
         var (sql, parameters) = _queryBuilder.BuildInsert(entity);
         _logger.LogQuery(sql, parameters);
         var cmd = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
-        var inserted = await _dapper.ExecuteScalarAsync<TEntity>(cmd);
+        var inserted = await _dapper.QuerySingleOrDefaultAsync<TEntity>(cmd);
 
         if (inserted == null)
         {

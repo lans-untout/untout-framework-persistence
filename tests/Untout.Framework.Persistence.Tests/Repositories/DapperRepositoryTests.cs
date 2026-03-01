@@ -94,7 +94,7 @@ public class DapperRepositoryTests
         _mockQueryBuilder.Setup(b => b.BuildInsert(It.IsAny<TestEntity>()))
             .Returns((expectedSql, new DynamicParameters(new { entity.Name })));
 
-        _mockDapperExecutor.Setup(d => d.ExecuteScalarAsync<TestEntity>(It.IsAny<CommandDefinition>()))
+        _mockDapperExecutor.Setup(d => d.QuerySingleOrDefaultAsync<TestEntity>(It.IsAny<CommandDefinition>()))
             .ReturnsAsync(new TestEntity { Id = expectedId, Name = entity.Name });
 
         var repository = CreateRepository();
