@@ -74,16 +74,16 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
         var (sql, parameters) = _queryBuilder.BuildInsert(entity);
         _logger.LogQuery(sql, parameters);
         var cmd = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
-        var insertedId = await _dapper.ExecuteScalarAsync<TKey>(cmd);
+        var inserted = await _dapper.ExecuteScalarAsync<TEntity>(cmd);
 
-        if (insertedId == null || EqualityComparer<TKey>.Default.Equals(insertedId, default))
+        if (inserted == null)
         {
-            _logger.LogWarning("AddAsync did not return an inserted ID");
+            _logger.LogWarning("AddAsync did not return an inserted item");
             return entity;
         }
 
-        entity.Id = insertedId;
-        _logger.LogDebug($"AddAsync inserted entity with Id={insertedId}");
+        entity.Id = inserted.Id;
+        _logger.LogDebug($"AddAsync inserted entity with Id={inserted.Id}");
         return entity;
     }
 

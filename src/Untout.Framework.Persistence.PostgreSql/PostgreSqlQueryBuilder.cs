@@ -72,7 +72,8 @@ public class PostgreSqlQueryBuilder<TKey, TEntity> : ISqlQueryBuilder<TKey, TEnt
         var columnList = string.Join(", ", _columnNames.Values);
         var parameterList = string.Join(", ", _columnNames.Keys.Select(c => $"@{c}"));
 
-        return ($"INSERT INTO {_tableName} ({columnList}) VALUES ({parameterList}) RETURNING {_idColumn}", parameters);
+        var colsAndAs = string.Join(", ", _columnNames.Select(kv => $"{kv.Value} AS {kv.Key}"));
+        return ($"INSERT INTO {_tableName} ({columnList}) VALUES ({parameterList}) RETURNING {_idColumn} AS Id, {colsAndAs}", parameters);
     }
 
     /// <inheritdoc />
