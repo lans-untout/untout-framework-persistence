@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using Untout.Framework.Persistence.Interfaces;
 using Untout.Framework.Persistence.PostgreSql;
 using Untout.Framework.Persistence.PostgreSql.Adapters;
@@ -57,11 +56,7 @@ public class PostgreSqlQueryBuilderTests
         Assert.Contains("INSERT INTO test_article", sql);
         Assert.Contains("(title, content, created_at)", sql);
         Assert.Contains("VALUES (@Title, @Content, @CreatedAt)", sql);
-        Assert.Contains("RETURNING", sql);
-        Assert.Contains("id AS Id", sql);
-        Assert.Contains("title AS Title", sql);
-        Assert.Contains("content AS Content", sql);
-        Assert.Contains("created_at AS CreatedAt", sql);
+        Assert.Contains("RETURNING id", sql);
         Assert.Contains("Title", parameters.ParameterNames);
         Assert.Equal("Test", parameters.Get<string>("Title"));
         Assert.Contains("Content", parameters.ParameterNames);

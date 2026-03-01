@@ -1,13 +1,9 @@
-
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Linq;
-using System.Reflection;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
-using Untout.Framework.Persistence;
 using Untout.Framework.Persistence.Interfaces;
 
 namespace Untout.Framework.Persistence.PostgreSql;
@@ -69,21 +65,17 @@ public class DapperRepository<TKey, TEntity> : IRepository<TKey, TEntity>
     /// <inheritdoc />
     public virtual async Task<TEntity> AddAsync(TEntity entity, CancellationToken cancellationToken = default)
     {
-        ArgumentNullException.ThrowIfNull(entity, nameof(entity));
-
         var (sql, parameters) = _queryBuilder.BuildInsert(entity);
         _logger.LogQuery(sql, parameters);
-        var cmd = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);
-        var inserted = await _dapper.QuerySingleOrDefaultAsync<TEntity>(cmd);
-
-        if (inserted == null)
+        var cmd = new CommandDefinition(sql, parameters, cancellationToken: cancellationToken);        
+        var insertedId = await _dapper.ExecuteScalarAsync<TKey>(cmd);
+        if (insertedId == null || insertedId.Equals(default(TKey)))
         {
-            _logger.LogWarning("AddAsync did not return an inserted item");
+            _logger.LogWarning("AddAsync did not return a valid inserted ID");
             return entity;
         }
-
-        entity.Id = inserted.Id;
-        _logger.LogDebug($"AddAsync inserted entity with Id={inserted.Id}");
+        entity.Id = insertedId;
+        _logger.LogDebug($"AddAsync inserted entity with ID {insertedId}");
         return entity;
     }
 

@@ -10,9 +10,9 @@ namespace Untout.Framework.Persistence.PostgreSql.Adapters;
 /// Convention-based name adapter that converts PascalCase to snake_case
 /// Used for PostgreSQL naming conventions (e.g., ArticleId -> article_id)
 /// </summary>
-public class SnakeCaseAdapter : IDbNameAdapter
+public partial class SnakeCaseAdapter : IDbNameAdapter
 {
-    private static readonly Regex PascalCaseRegex = new(@"(?<!^)(?=[A-Z])", RegexOptions.Compiled);
+    private static readonly Regex PascalCaseRegex = PascalCaseToSnakeCaseRegex();
 
     /// <inheritdoc />
     public string GetTableName<T>() where T : class
@@ -39,8 +39,7 @@ public class SnakeCaseAdapter : IDbNameAdapter
         }
 
         // Check for [Column] attribute first
-        var columnAttr = propertyInfo.GetCustomAttributes(typeof(ColumnAttribute), false).FirstOrDefault() as ColumnAttribute;
-        if (columnAttr != null)
+        if (propertyInfo.GetCustomAttributes(typeof(ColumnAttribute), false).FirstOrDefault() is ColumnAttribute columnAttr)
         {
             return columnAttr.Name;
         }
@@ -63,4 +62,7 @@ public class SnakeCaseAdapter : IDbNameAdapter
 
         return PascalCaseRegex.Replace(input, "_").ToLowerInvariant();
     }
+
+    [GeneratedRegex(@"(?<!^)(?=[A-Z])", RegexOptions.Compiled)]
+    private static partial Regex PascalCaseToSnakeCaseRegex();
 }

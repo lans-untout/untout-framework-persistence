@@ -2,7 +2,6 @@ using Microsoft.Extensions.DependencyInjection;
 
 using System;
 using System.Linq;
-using Untout.Framework.Persistence;
 using Untout.Framework.Persistence.Interfaces;
 using Untout.Framework.Persistence.PostgreSql;
 using Untout.Framework.Persistence.PostgreSql.Adapters;

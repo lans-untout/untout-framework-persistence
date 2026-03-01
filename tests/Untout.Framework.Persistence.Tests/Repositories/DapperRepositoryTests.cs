@@ -9,7 +9,6 @@ using System.Threading;
 using System.Threading.Tasks;
 using Untout.Framework.Persistence.Interfaces;
 using Untout.Framework.Persistence.PostgreSql;
-using Xunit;
 
 namespace Untout.Framework.Persistence.Tests.Repositories;
 public class DapperRepositoryTests
@@ -94,8 +93,8 @@ public class DapperRepositoryTests
         _mockQueryBuilder.Setup(b => b.BuildInsert(It.IsAny<TestEntity>()))
             .Returns((expectedSql, new DynamicParameters(new { entity.Name })));
 
-        _mockDapperExecutor.Setup(d => d.QuerySingleOrDefaultAsync<TestEntity>(It.IsAny<CommandDefinition>()))
-            .ReturnsAsync(new TestEntity { Id = expectedId, Name = entity.Name });
+        _mockDapperExecutor.Setup(d => d.ExecuteScalarAsync<int>(It.IsAny<CommandDefinition>()))
+            .ReturnsAsync(expectedId);
 
         var repository = CreateRepository();
         var result = await repository.AddAsync(entity);

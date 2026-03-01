@@ -2,11 +2,9 @@
 using System;
 using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
-using Untout.Framework.Persistence;
 using Untout.Framework.Persistence.DependencyInjection;
 using Untout.Framework.Persistence.Interfaces;
 using Untout.Framework.Persistence.PostgreSql;
-using Xunit;
 
 namespace Untout.Framework.Persistence.Tests.DependencyInjection;
 public class PersistenceServiceCollectionExtensionsTests
