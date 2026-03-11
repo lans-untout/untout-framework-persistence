@@ -54,9 +54,11 @@ public class PostgreSqlQueryBuilderTests
 
         // Assert
         Assert.Contains("INSERT INTO test_article", sql);
-        Assert.Contains("(title, content, created_at)", sql);
-        Assert.Contains("VALUES (@Title, @Content, @CreatedAt)", sql);
+        Assert.Contains("(id, title, content, created_at)", sql);
+        Assert.Contains("VALUES (@Id, @Title, @Content, @CreatedAt)", sql);
         Assert.Contains("RETURNING id", sql);
+        Assert.Contains("Id", parameters.ParameterNames);
+        Assert.Equal(0, parameters.Get<int>("Id"));
         Assert.Contains("Title", parameters.ParameterNames);
         Assert.Equal("Test", parameters.Get<string>("Title"));
         Assert.Contains("Content", parameters.ParameterNames);
@@ -89,7 +91,7 @@ public class PostgreSqlQueryBuilderTests
 
         // Assert
         Assert.Contains("UPDATE test_article", sql);
-        Assert.Contains("SET title = @Title, content = @Content, created_at = @CreatedAt", sql);
+        Assert.Contains("SET id = @Id, title = @Title, content = @Content, created_at = @CreatedAt", sql);
         Assert.Contains("WHERE id = @Id", sql);
         Assert.Contains("Title", parameters.ParameterNames);
         Assert.Equal("Updated", parameters.Get<string>("Title"));

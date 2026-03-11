@@ -34,7 +34,7 @@ public class PostgreSqlQueryBuilder<TKey, TEntity> : ISqlQueryBuilder<TKey, TEnt
 
         // Cache properties (exclude Id for inserts/updates)
         var properties = typeof(TEntity).GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(p => p.CanRead && p.CanWrite && p.Name != nameof(IEntity<TKey>.Id))
+            .Where(p => p.CanRead && p.CanWrite)
             .ToList();
 
         // Dual cache: PropertyInfo for fast value access + column names for SQL generation
@@ -46,7 +46,7 @@ public class PostgreSqlQueryBuilder<TKey, TEntity> : ISqlQueryBuilder<TKey, TEnt
     public string BuildSelectAll()
     {
         var colsAndAs = string.Join(", ", _columnNames.Select(kv => $"{kv.Value} AS {kv.Key}"));
-        return $"SELECT {_idColumn} AS Id, {colsAndAs} FROM {_tableName}";
+        return $"SELECT {colsAndAs} FROM {_tableName}";
     }
 
     /// <inheritdoc />
@@ -55,7 +55,7 @@ public class PostgreSqlQueryBuilder<TKey, TEntity> : ISqlQueryBuilder<TKey, TEnt
         var parameters = new DynamicParameters();
         parameters.Add("Id", id);
         var colsAndAs = string.Join(", ", _columnNames.Select(kv => $"{kv.Value} AS {kv.Key}"));
-        return ($"SELECT {_idColumn} AS Id, {colsAndAs} FROM {_tableName} WHERE {_idColumn} = @Id", parameters);
+        return ($"SELECT {colsAndAs} FROM {_tableName} WHERE {_idColumn} = @Id", parameters);
     }
 
     /// <inheritdoc />
@@ -71,8 +71,7 @@ public class PostgreSqlQueryBuilder<TKey, TEntity> : ISqlQueryBuilder<TKey, TEnt
 
         var columnList = string.Join(", ", _columnNames.Values);
         var parameterList = string.Join(", ", _columnNames.Keys.Select(c => $"@{c}"));
-
-        return ($"INSERT INTO {_tableName} ({columnList}) VALUES ({parameterList}) RETURNING id", parameters);
+        return ($"INSERT INTO {_tableName} ({$"{columnList}"}) VALUES ({parameterList}) RETURNING {_idColumn}", parameters);
     }
 
     /// <inheritdoc />
