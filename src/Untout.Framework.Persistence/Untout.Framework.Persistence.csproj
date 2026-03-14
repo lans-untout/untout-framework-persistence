@@ -9,5 +9,13 @@
   <ItemGroup>
     <PackageReference Include="Dapper" Version="2.1.35" />
   </ItemGroup>
+	
+  <ItemGroup>
+    <InternalsVisibleTo Include="Untout.Framework.Persistence.DependencyInjection" />
+    <InternalsVisibleTo Include="Untout.Framework.Persistence.PostgreSql" />
+    <InternalsVisibleTo Include="Untout.Framework.Persistence.Tests" />
+    <InternalsVisibleTo Include="DynamicProxyGenAssembly2" />
+	  
+  </ItemGroup>
 
 </Project>

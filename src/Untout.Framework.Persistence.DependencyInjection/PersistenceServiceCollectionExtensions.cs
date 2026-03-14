@@ -34,7 +34,8 @@ public static class PersistenceServiceCollectionExtensions
         
         // Dapper executor (scoped - manages connections per request)
         services.AddScoped<IDapperExecutor, DapperExecutor>();
-        
+        services.AddScoped<ITransactionScopeFactory, TransactionScopeFactory>();
+
         // Name adapter (singleton - stateless)
         services.AddSingleton<IDbNameAdapter, SnakeCaseAdapter>();
 
@@ -141,17 +142,27 @@ public static class PersistenceServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        // Query builder (scoped - uses name adapter)
-        services.AddScoped<ISqlQueryBuilder<TKey, TEntity>>(sp =>
-            new PostgreSqlQueryBuilder<TKey, TEntity>(
-                sp.GetRequiredService<IDbNameAdapter>()));
+        // check if not registered already
+        var existingQueryBuilderDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(ISqlQueryBuilder<TKey, TEntity>));
+        if (existingQueryBuilderDescriptor == null)
+        {
+            // Query builder (scoped - uses name adapter)
+            services.AddScoped<ISqlQueryBuilder<TKey, TEntity>>(sp =>
+                new PostgreSqlQueryBuilder<TKey, TEntity>(
+                    sp.GetRequiredService<IDbNameAdapter>()));
+        }
 
-        // Repository (scoped - uses query builder, executor, logger)
-        services.AddScoped<IRepository<TKey, TEntity>>(sp =>
-            new DapperRepository<TKey, TEntity>(
-                sp.GetRequiredService<ISqlQueryBuilder<TKey, TEntity>>(),
-                sp.GetRequiredService<IDapperExecutor>(),
-                sp.GetRequiredService<IPersistenceLogger>()));
+        // check if not registered already
+        var existingRepositoryDescriptor = services.FirstOrDefault(d => d.ServiceType == typeof(IRepository<TKey, TEntity>));
+        if (existingRepositoryDescriptor == null)
+        {
+            // Repository (scoped - uses query builder, executor, logger)
+            services.AddScoped<IRepository<TKey, TEntity>>(sp =>
+                new DapperRepository<TKey, TEntity>(
+                    sp.GetRequiredService<ISqlQueryBuilder<TKey, TEntity>>(),
+                    sp.GetRequiredService<IDapperExecutor>(),
+                    sp.GetRequiredService<IPersistenceLogger>()));
+        }
 
         return services;
     }

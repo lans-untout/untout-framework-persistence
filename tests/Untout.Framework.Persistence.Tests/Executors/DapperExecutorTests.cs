@@ -9,30 +9,45 @@ using Dapper;
 using Untout.Framework.Persistence.Interfaces;
 using Untout.Framework.Persistence.PostgreSql;
 using Xunit;
+using System.Data.Common;
 
 public class DapperExecutorTests
 {
-    private readonly Mock<IDbConnectionFactory> _mockFactory;
-    private readonly Mock<IDbConnection> _mockConnection;
+    private readonly IDbConnection _mockConnection;
+    private IDbConnectionFactory _dbConnectionFactory;
+    private ITransactionScopeFactory _transactionScopeFactory;
 
     public DapperExecutorTests()
     {
-        _mockFactory = new Mock<IDbConnectionFactory>();
-        _mockConnection = new Mock<IDbConnection>();
+        _dbConnectionFactory = Mock.Of<IDbConnectionFactory>();
+        _mockConnection = Mock.Of<IDbConnection>();
+        _transactionScopeFactory = Mock.Of<ITransactionScopeFactory>();
     }
 
     [Fact]
-    public void Constructor_WithNullFactory_ThrowsArgumentNullException()
+    public void Constructor_WithNullDbConnectionFactory_ThrowsArgumentNullException()
     {
+        _dbConnectionFactory = null;
+
         // Act & Assert
-        Assert.Throws<ArgumentNullException>(() => new DapperExecutor(null));
+        Assert.Throws<ArgumentNullException>(() => GetExecutor());
+    }
+
+    [Fact]
+    public void Constructor_WithNullTransactionScopeFactory_ThrowsArgumentNullException()
+    {
+        _transactionScopeFactory = null;
+
+        // Act & Assert
+        Assert.Throws<ArgumentNullException>(() => GetExecutor());
     }
 
     [Fact]
     public void Constructor_WithValidFactory_Succeeds()
     {
+
         // Act
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
 
         // Assert
         Assert.NotNull(executor);
@@ -42,11 +57,11 @@ public class DapperExecutorTests
     public async Task QueryAsync_CreatesConnectionFromFactory()
     {
         // Arrange
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_mockConnection.Object);
-        _mockConnection.Setup(c => c.State).Returns(ConnectionState.Open);
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_mockConnection);
+        Mock.Get(_mockConnection).Setup(c => c.State).Returns(ConnectionState.Open);
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var command = new CommandDefinition("SELECT * FROM test");
 
         // Act
@@ -60,18 +75,18 @@ public class DapperExecutorTests
         }
 
         // Assert
-        _mockFactory.Verify(f => f.CreateConnectionAsync(default), Times.Once);
+        Mock.Get(_dbConnectionFactory).Verify(f => f.CreateConnectionAsync(default), Times.Once);
     }
 
     [Fact]
     public async Task QueryAsync_PassesCancellationTokenToFactory()
     {
         // Arrange
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_mockConnection.Object);
-        _mockConnection.Setup(c => c.State).Returns(ConnectionState.Open);
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_mockConnection);
+        Mock.Get(_mockConnection).Setup(c => c.State).Returns(ConnectionState.Open);
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var cts = new CancellationTokenSource();
         var command = new CommandDefinition("SELECT * FROM test", cancellationToken: cts.Token);
 
@@ -86,7 +101,7 @@ public class DapperExecutorTests
         }
 
         // Assert
-        _mockFactory.Verify(f => f.CreateConnectionAsync(cts.Token), Times.Once);
+        Mock.Get(_dbConnectionFactory).Verify(f => f.CreateConnectionAsync(cts.Token), Times.Once);
     }
 
     [Fact]
@@ -96,10 +111,10 @@ public class DapperExecutorTests
         var mockDisposableConnection = new Mock<IDbConnection>();
         mockDisposableConnection.Setup(c => c.State).Returns(ConnectionState.Open);
 
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockDisposableConnection.Object);
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var command = new CommandDefinition("SELECT * FROM test");
 
         // Act
@@ -120,7 +135,7 @@ public class DapperExecutorTests
     public async Task QueryAsync_CreatesNewConnectionForEachCall()
     {
         // Arrange
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(() =>
             {
                 var conn = new Mock<IDbConnection>();
@@ -128,7 +143,7 @@ public class DapperExecutorTests
                 return conn.Object;
             });
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var command1 = new CommandDefinition("SELECT * FROM test1");
         var command2 = new CommandDefinition("SELECT * FROM test2");
 
@@ -137,7 +152,7 @@ public class DapperExecutorTests
         try { await executor.QueryAsync<TestEntity>(command2); } catch { }
 
         // Assert - Factory should be called twice (one connection per operation)
-        _mockFactory.Verify(f => f.CreateConnectionAsync(default), Times.Exactly(2));
+        Mock.Get(_dbConnectionFactory).Verify(f => f.CreateConnectionAsync(default), Times.Exactly(2));
     }
 
     [Fact]
@@ -145,10 +160,10 @@ public class DapperExecutorTests
     {
         // Arrange
         var expectedException = new InvalidOperationException("Connection failed");
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(expectedException);
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var command = new CommandDefinition("SELECT * FROM test");
 
         // Act & Assert
@@ -161,10 +176,10 @@ public class DapperExecutorTests
     public async Task QueryAsync_WithCancelledToken_PropagatesCancellation()
     {
         // Arrange
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var cts = new CancellationTokenSource();
         cts.Cancel();
         var command = new CommandDefinition("SELECT * FROM test", cancellationToken: cts.Token);
@@ -178,11 +193,11 @@ public class DapperExecutorTests
     public async Task QuerySingleOrDefaultAsync_CreatesConnectionFromFactory()
     {
         // Arrange
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_mockConnection.Object);
-        _mockConnection.Setup(c => c.State).Returns(ConnectionState.Open);
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_mockConnection);
+        Mock.Get(_mockConnection).Setup(c => c.State).Returns(ConnectionState.Open);
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var command = new CommandDefinition("SELECT * FROM test WHERE id = @Id");
 
         // Act
@@ -196,18 +211,18 @@ public class DapperExecutorTests
         }
 
         // Assert
-        _mockFactory.Verify(f => f.CreateConnectionAsync(default), Times.Once);
+        Mock.Get(_dbConnectionFactory).Verify(f => f.CreateConnectionAsync(default), Times.Once);
     }
 
     [Fact]
     public async Task QuerySingleOrDefaultAsync_PassesCancellationTokenToFactory()
     {
         // Arrange
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_mockConnection.Object);
-        _mockConnection.Setup(c => c.State).Returns(ConnectionState.Open);
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_mockConnection);
+        Mock.Get(_mockConnection).Setup(c => c.State).Returns(ConnectionState.Open);
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var cts = new CancellationTokenSource();
         var command = new CommandDefinition("SELECT * FROM test WHERE id = @Id", cancellationToken: cts.Token);
 
@@ -222,7 +237,7 @@ public class DapperExecutorTests
         }
 
         // Assert
-        _mockFactory.Verify(f => f.CreateConnectionAsync(cts.Token), Times.Once);
+        Mock.Get(_dbConnectionFactory).Verify(f => f.CreateConnectionAsync(cts.Token), Times.Once);
     }
 
     [Fact]
@@ -232,10 +247,10 @@ public class DapperExecutorTests
         var mockDisposableConnection = new Mock<IDbConnection>();
         mockDisposableConnection.Setup(c => c.State).Returns(ConnectionState.Open);
 
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockDisposableConnection.Object);
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var command = new CommandDefinition("SELECT * FROM test WHERE id = @Id");
 
         // Act
@@ -257,10 +272,10 @@ public class DapperExecutorTests
     {
         // Arrange
         var expectedException = new InvalidOperationException("Connection failed");
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(expectedException);
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var command = new CommandDefinition("SELECT * FROM test WHERE id = @Id");
 
         // Act & Assert
@@ -273,10 +288,10 @@ public class DapperExecutorTests
     public async Task QuerySingleOrDefaultAsync_WithCancelledToken_PropagatesCancellation()
     {
         // Arrange
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var cts = new CancellationTokenSource();
         cts.Cancel();
         var command = new CommandDefinition("SELECT * FROM test WHERE id = @Id", cancellationToken: cts.Token);
@@ -290,11 +305,11 @@ public class DapperExecutorTests
     public async Task ExecuteAsync_CreatesConnectionFromFactory()
     {
         // Arrange
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_mockConnection.Object);
-        _mockConnection.Setup(c => c.State).Returns(ConnectionState.Open);
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_mockConnection);
+        Mock.Get(_mockConnection).Setup(c => c.State).Returns(ConnectionState.Open);
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var command = new CommandDefinition("UPDATE test SET name = @Name");
 
         // Act
@@ -308,18 +323,18 @@ public class DapperExecutorTests
         }
 
         // Assert
-        _mockFactory.Verify(f => f.CreateConnectionAsync(default), Times.Once);
+        Mock.Get(_dbConnectionFactory).Verify(f => f.CreateConnectionAsync(default), Times.Once);
     }
 
     [Fact]
     public async Task ExecuteAsync_PassesCancellationTokenToFactory()
     {
         // Arrange
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_mockConnection.Object);
-        _mockConnection.Setup(c => c.State).Returns(ConnectionState.Open);
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_mockConnection);
+        Mock.Get(_mockConnection).Setup(c => c.State).Returns(ConnectionState.Open);
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var cts = new CancellationTokenSource();
         var command = new CommandDefinition("UPDATE test SET name = @Name", cancellationToken: cts.Token);
 
@@ -334,7 +349,7 @@ public class DapperExecutorTests
         }
 
         // Assert
-        _mockFactory.Verify(f => f.CreateConnectionAsync(cts.Token), Times.Once);
+        Mock.Get(_dbConnectionFactory).Verify(f => f.CreateConnectionAsync(cts.Token), Times.Once);
     }
 
     [Fact]
@@ -344,11 +359,11 @@ public class DapperExecutorTests
         var mockDisposableConnection = new Mock<IDbConnection>();
         mockDisposableConnection.Setup(c => c.State).Returns(ConnectionState.Open);
 
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockDisposableConnection.Object);
 
-        var executor = new DapperExecutor(_mockFactory.Object);
-        var command = new CommandDefinition("UPDATE test SET name = @Name");
+        var executor = GetExecutor();
+        var command = new CommandDefinition("UPDATE test SET name = @Name", new DynamicParameters());
 
         // Act
         try
@@ -371,10 +386,10 @@ public class DapperExecutorTests
         var mockDisposableConnection = new Mock<IDbConnection>();
         mockDisposableConnection.Setup(c => c.State).Returns(ConnectionState.Open);
 
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockDisposableConnection.Object);
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var command = new CommandDefinition("INVALID SQL");
 
         // Act
@@ -396,10 +411,10 @@ public class DapperExecutorTests
     {
         // Arrange
         var expectedException = new InvalidOperationException("Connection failed");
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(expectedException);
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var command = new CommandDefinition("DELETE FROM test WHERE id = @Id");
 
         // Act & Assert
@@ -412,10 +427,10 @@ public class DapperExecutorTests
     public async Task ExecuteAsync_WithCancelledToken_PropagatesCancellation()
     {
         // Arrange
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var cts = new CancellationTokenSource();
         cts.Cancel();
         var command = new CommandDefinition("UPDATE test SET name = @Name", cancellationToken: cts.Token);
@@ -429,7 +444,7 @@ public class DapperExecutorTests
     public async Task ExecuteAsync_WithDifferentCancellationTokens_PassesCorrectTokens()
     {
         // Arrange
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(() =>
             {
                 var conn = new Mock<IDbConnection>();
@@ -437,7 +452,7 @@ public class DapperExecutorTests
                 return conn.Object;
             });
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var cts1 = new CancellationTokenSource();
         var cts2 = new CancellationTokenSource();
         var command1 = new CommandDefinition("UPDATE test SET name = @Name1", cancellationToken: cts1.Token);
@@ -448,19 +463,19 @@ public class DapperExecutorTests
         try { await executor.ExecuteAsync(command2); } catch { }
 
         // Assert
-        _mockFactory.Verify(f => f.CreateConnectionAsync(cts1.Token), Times.Once);
-        _mockFactory.Verify(f => f.CreateConnectionAsync(cts2.Token), Times.Once);
+        Mock.Get(_dbConnectionFactory).Verify(f => f.CreateConnectionAsync(cts1.Token), Times.Once);
+        Mock.Get(_dbConnectionFactory).Verify(f => f.CreateConnectionAsync(cts2.Token), Times.Once);
     }
 
     [Fact]
     public async Task ExecuteScalarAsync_CreatesConnectionFromFactory()
     {
         // Arrange
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_mockConnection.Object);
-        _mockConnection.Setup(c => c.State).Returns(ConnectionState.Open);
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_mockConnection);
+        Mock.Get(_mockConnection).Setup(c => c.State).Returns(ConnectionState.Open);
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var command = new CommandDefinition("INSERT INTO test (name) VALUES (@Name) RETURNING id");
 
         // Act
@@ -474,18 +489,18 @@ public class DapperExecutorTests
         }
 
         // Assert
-        _mockFactory.Verify(f => f.CreateConnectionAsync(default), Times.Once);
+        Mock.Get(_dbConnectionFactory).Verify(f => f.CreateConnectionAsync(default), Times.Once);
     }
 
     [Fact]
     public async Task ExecuteScalarAsync_PassesCancellationTokenToFactory()
     {
         // Arrange
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
-            .ReturnsAsync(_mockConnection.Object);
-        _mockConnection.Setup(c => c.State).Returns(ConnectionState.Open);
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+            .ReturnsAsync(_mockConnection);
+        Mock.Get(_mockConnection).Setup(c => c.State).Returns(ConnectionState.Open);
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var cts = new CancellationTokenSource();
         var command = new CommandDefinition("INSERT INTO test (name) VALUES (@Name) RETURNING id", cancellationToken: cts.Token);
 
@@ -500,7 +515,7 @@ public class DapperExecutorTests
         }
 
         // Assert
-        _mockFactory.Verify(f => f.CreateConnectionAsync(cts.Token), Times.Once);
+        Mock.Get(_dbConnectionFactory).Verify(f => f.CreateConnectionAsync(cts.Token), Times.Once);
     }
 
     [Fact]
@@ -510,10 +525,10 @@ public class DapperExecutorTests
         var mockDisposableConnection = new Mock<IDbConnection>();
         mockDisposableConnection.Setup(c => c.State).Returns(ConnectionState.Open);
 
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(mockDisposableConnection.Object);
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var command = new CommandDefinition("INSERT INTO test (name) VALUES (@Name) RETURNING id");
 
         // Act
@@ -534,7 +549,7 @@ public class DapperExecutorTests
     public async Task ExecuteScalarAsync_CreatesNewConnectionForEachCall()
     {
         // Arrange
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
             .ReturnsAsync(() =>
             {
                 var conn = new Mock<IDbConnection>();
@@ -542,7 +557,7 @@ public class DapperExecutorTests
                 return conn.Object;
             });
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var command1 = new CommandDefinition("INSERT INTO test (name) VALUES (@Name1) RETURNING id");
         var command2 = new CommandDefinition("INSERT INTO test (name) VALUES (@Name2) RETURNING id");
 
@@ -551,7 +566,7 @@ public class DapperExecutorTests
         try { await executor.ExecuteScalarAsync<int>(command2); } catch { }
 
         // Assert - Factory should be called twice (one connection per operation)
-        _mockFactory.Verify(f => f.CreateConnectionAsync(default), Times.Exactly(2));
+        Mock.Get(_dbConnectionFactory).Verify(f => f.CreateConnectionAsync(default), Times.Exactly(2));
     }
 
     [Fact]
@@ -559,10 +574,10 @@ public class DapperExecutorTests
     {
         // Arrange
         var expectedException = new InvalidOperationException("Connection failed");
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(expectedException);
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var command = new CommandDefinition("INSERT INTO test (name) VALUES (@Name) RETURNING id");
 
         // Act & Assert
@@ -575,10 +590,10 @@ public class DapperExecutorTests
     public async Task ExecuteScalarAsync_WithCancelledToken_PropagatesCancellation()
     {
         // Arrange
-        _mockFactory.Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
+        Mock.Get(_dbConnectionFactory).Setup(f => f.CreateConnectionAsync(It.IsAny<CancellationToken>()))
             .ThrowsAsync(new OperationCanceledException());
 
-        var executor = new DapperExecutor(_mockFactory.Object);
+        var executor = GetExecutor();
         var cts = new CancellationTokenSource();
         cts.Cancel();
         var command = new CommandDefinition("INSERT INTO test VALUES (@Name) RETURNING id", cancellationToken: cts.Token);
@@ -586,6 +601,10 @@ public class DapperExecutorTests
         // Act & Assert
         await Assert.ThrowsAsync<OperationCanceledException>(() =>
             executor.ExecuteScalarAsync<int>(command));
+    }
+    private DapperExecutor GetExecutor()
+    {
+        return new DapperExecutor(_dbConnectionFactory, _transactionScopeFactory);
     }
 
     public class TestEntity : IEntity<int>

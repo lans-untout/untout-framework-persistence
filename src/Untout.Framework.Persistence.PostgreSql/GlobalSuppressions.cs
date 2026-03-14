@@ -5,5 +5,4 @@
 
 using System.Diagnostics.CodeAnalysis;
 
-[assembly: SuppressMessage("Style", "IDE0305:Simplify collection initialization", Justification = "<Pending>", Scope = "member", Target = "~M:Untout.Framework.Persistence.PostgreSql.DapperRepository`2.#ctor(Untout.Framework.Persistence.Interfaces.ISqlQueryBuilder{`0,`1},Untout.Framework.Persistence.PostgreSql.IDapperExecutor,Untout.Framework.Persistence.Interfaces.IPersistenceLogger)")]
-[assembly: SuppressMessage("Style", "IDE0305:Simplify collection initialization", Justification = "<Pending>", Scope = "member", Target = "~M:Untout.Framework.Persistence.PostgreSql.PostgreSqlQueryBuilder`2.#ctor(Untout.Framework.Persistence.Interfaces.IDbNameAdapter)")]
+[assembly: SuppressMessage("Style", "IDE0305:Simplify collection initialization", Justification = "<Pending>", Scope = "module")]

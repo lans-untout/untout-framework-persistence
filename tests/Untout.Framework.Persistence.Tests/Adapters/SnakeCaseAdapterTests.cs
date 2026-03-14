@@ -58,7 +58,11 @@ public class SnakeCaseAdapterTests
 
     private static string ConvertToSnakeCase(string input)
     {
-        if (string.IsNullOrWhiteSpace(input)) return input;
+        if (string.IsNullOrWhiteSpace(input))
+        {
+            return input;
+        }
+
         return System.Text.RegularExpressions.Regex.Replace(input, @"(?<!^)(?=[A-Z])", "_").ToLowerInvariant();
     }
 

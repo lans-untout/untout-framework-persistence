@@ -4,7 +4,7 @@ using System.Linq;
 using Microsoft.Extensions.DependencyInjection;
 using Untout.Framework.Persistence.DependencyInjection;
 using Untout.Framework.Persistence.Interfaces;
-using Untout.Framework.Persistence.PostgreSql;
+using Untout.Framework.Persistence.Tests.Logging;
 
 namespace Untout.Framework.Persistence.Tests.DependencyInjection;
 public class PersistenceServiceCollectionExtensionsTests

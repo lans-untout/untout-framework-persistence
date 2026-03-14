@@ -11,9 +11,14 @@ namespace Untout.Framework.Persistence.PostgreSql;
 /// PostgreSQL connection factory implementation
 /// Manages connection lifecycle using NpgsqlConnection
 /// </summary>
-public class NpgsqlConnectionFactory : IDbConnectionFactory
+internal class NpgsqlConnectionFactory : IDbConnectionFactory
 {
     private readonly string _connectionString;
+
+    /// <summary>
+    /// Gets the connection string used by this factory.
+    /// </summary>
+    public string ConnectionString => _connectionString;
 
     /// <summary>
     /// Initializes a new instance of the <see cref="NpgsqlConnectionFactory"/> class

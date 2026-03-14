@@ -43,14 +43,14 @@ public class PostgreSqlQueryBuilder<TKey, TEntity> : ISqlQueryBuilder<TKey, TEnt
     }
 
     /// <inheritdoc />
-    public string BuildSelectAll()
+    public virtual string BuildSelectAll()
     {
         var colsAndAs = string.Join(", ", _columnNames.Select(kv => $"{kv.Value} AS {kv.Key}"));
         return $"SELECT {colsAndAs} FROM {_tableName}";
     }
 
     /// <inheritdoc />
-    public (string Sql, DynamicParameters Parameters) BuildSelectById(TKey id)
+    public virtual (string Sql, DynamicParameters Parameters) BuildSelectById(TKey id)
     {
         var parameters = new DynamicParameters();
         parameters.Add("Id", id);
@@ -59,7 +59,7 @@ public class PostgreSqlQueryBuilder<TKey, TEntity> : ISqlQueryBuilder<TKey, TEnt
     }
 
     /// <inheritdoc />
-    public (string Sql, DynamicParameters Parameters) BuildInsert(TEntity entity)
+    public virtual (string Sql, DynamicParameters Parameters) BuildInsert(TEntity entity)
     {
         ArgumentNullException.ThrowIfNull(entity, nameof(entity));
         var parameters = new DynamicParameters();
@@ -92,7 +92,7 @@ public class PostgreSqlQueryBuilder<TKey, TEntity> : ISqlQueryBuilder<TKey, TEnt
     }
 
     /// <inheritdoc />
-    public (string Sql, DynamicParameters Parameters) BuildDelete(TKey id)
+    public virtual (string Sql, DynamicParameters Parameters) BuildDelete(TKey id)
     {
         var parameters = new DynamicParameters();
         parameters.Add("Id", id);

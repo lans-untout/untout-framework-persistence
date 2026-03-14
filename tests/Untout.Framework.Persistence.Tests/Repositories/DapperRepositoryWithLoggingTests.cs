@@ -1,12 +1,12 @@
 
 using Moq;
 using System.Collections.Generic;
-using System.Data;
 using System.Threading;
 using System.Threading.Tasks;
 using Dapper;
 using Untout.Framework.Persistence.Interfaces;
 using Untout.Framework.Persistence.PostgreSql;
+using System.Data;
 
 namespace Untout.Framework.Persistence.Tests.Repositories;
 public class DapperRepositoryWithLoggingTests
