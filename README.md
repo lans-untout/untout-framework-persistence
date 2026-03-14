@@ -39,6 +39,45 @@ public class ArticleService
 }
 ```
 
+## Using DapperExecutor for Transactions
+
+You can execute multiple operations in a single transaction using `DapperExecutor.ExecuteInTransactionAsync`. This ensures all operations either commit together or roll back on error.
+
+**Example:**
+
+```csharp
+public class TransferService
+{
+    private readonly IDapperExecutor _executor;
+
+    public TransferService(IDapperExecutor executor)
+    {
+        _executor = executor;
+    }
+
+    public async Task TransferFundsAsync(int fromAccountId, int toAccountId, decimal amount)
+    {
+        await _executor.ExecuteInTransactionAsync(async (conn, tx) =>
+        {
+            // Debit source account
+            await conn.ExecuteAsync(
+                "UPDATE accounts SET balance = balance - @Amount WHERE id = @Id AND balance >= @Amount",
+                new { Id = fromAccountId, Amount = amount }, tx);
+
+            // Credit destination account
+            await conn.ExecuteAsync(
+                "UPDATE accounts SET balance = balance + @Amount WHERE id = @Id",
+                new { Id = toAccountId, Amount = amount }, tx);
+
+            // Record transfer
+            await conn.ExecuteAsync(
+                "INSERT INTO transfers (from_id, to_id, amount, created_at) VALUES (@FromId, @ToId, @Amount, @CreatedAt)",
+                new { FromId = fromAccountId, ToId = toAccountId, Amount = amount, CreatedAt = DateTime.UtcNow }, tx);
+        });
+    }
+}
+```
+
 ## Manual Setup (Without DI)
 
 If you're not using dependency injection:
@@ -60,6 +99,13 @@ var executor = new DapperExecutor(connectionFactory);
 
 // 3. Create repository
 var repository = new DapperRepository<int, Article>(queryBuilder, executor);
+
+// 4. Use DapperExecutor for transactions
+await executor.ExecuteInTransactionAsync(async (conn, tx) =>
+{
+    await conn.ExecuteAsync("UPDATE accounts SET balance = balance - @Amount WHERE id = @Id", new { Id = 1, Amount = 100 }, tx);
+    await conn.ExecuteAsync("UPDATE accounts SET balance = balance + @Amount WHERE id = @Id", new { Id = 2, Amount = 100 }, tx);
+});
 
 // 4. Use the repository
 var article = new Article { Title = "Hello", Content = "World" };
@@ -142,6 +188,8 @@ tests/
 3. Repository gets a connection from the connection factory.
 4. Dapper executes SQL with parameters.
 5. Name adapter keeps table/column naming consistent with your database.
+
+6. For transactions, use `DapperExecutor.ExecuteInTransactionAsync` to ensure atomicity.
 
 ## Getting started (minimal steps)
 
